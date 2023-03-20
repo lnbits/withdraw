@@ -132,6 +132,7 @@ new Vue({
     },
     openUpdateDialog: function (linkId) {
       var link = _.findWhere(this.withdrawLinks, {id: linkId})
+      link._data.has_webhook = link._data.webhook_url ? true : false
       this.formDialog.data = _.clone(link._data)
       this.formDialog.show = true
     },
@@ -189,6 +190,14 @@ new Vue({
     },
     updateWithdrawLink: function (wallet, data) {
       var self = this
+
+      // Remove webhook info if toggle is set to false
+      if (!data.has_webhook) {
+        data.webhook_url = null
+        data.webhook_headers = null
+        data.webhook_body = null
+      }
+
       const body = _.pick(
         data,
         'title',
@@ -202,15 +211,6 @@ new Vue({
         'webhook_body',
         'custom_url'
       )
-
-      if (data.has_webhook) {
-        body = {
-          ...body,
-          webhook_url: data.webhook_url,
-          webhook_headers: data.webhook_headers,
-          webhook_body: data.webhook_body
-        }
-      }
 
       LNbits.api
         .request(
