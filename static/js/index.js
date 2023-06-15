@@ -133,6 +133,7 @@ new Vue({
     },
     openUpdateDialog: function (linkId) {
       var link = _.findWhere(this.withdrawLinks, {id: linkId})
+      link._data.has_webhook = link._data.webhook_url ? true : false
       this.formDialog.data = _.clone(link._data)
       this.formDialog.show = true
     },
@@ -157,6 +158,13 @@ new Vue({
           minutes: 60,
           hours: 3600
         }[this.formDialog.secondMultiplier]
+        
+        if(data.webhook_headers){
+          data.webhook_headers = this.ifObjStringify(data.webhook_headers)
+        } 
+        if(data.webhook_body){
+          data.webhook_body = this.ifObjStringify(data.webhook_body)
+        }
       if (data.id) {
         this.updateWithdrawLink(wallet, data)
       } else {
@@ -177,11 +185,11 @@ new Vue({
       if (!data.use_custom) {
         data.custom_url = null
       }
-
+      
       if (data.use_custom && !data?.custom_url) {
         data.custom_url = '/static/images/default_voucher.png'
       }
-
+      
       if (data.id) {
         this.updateWithdrawLink(wallet, data)
       } else {
@@ -190,7 +198,7 @@ new Vue({
     },
     updateWithdrawLink: function (wallet, data) {
       var self = this
-      const body = _.pick(
+      let body = _.pick(
         data,
         'title',
         'min_withdrawable',
@@ -204,14 +212,14 @@ new Vue({
         'custom_url'
       )
 
-      if (data.has_webhook) {
-        body = {
-          ...body,
-          webhook_url: data.webhook_url,
-          webhook_headers: data.webhook_headers,
-          webhook_body: data.webhook_body
-        }
-      }
+      // if (data.has_webhook) {
+      //   body = {
+      //     ...body,
+      //     webhook_url: data.webhook_url,
+      //     webhook_headers: data.webhook_headers,
+      //     webhook_body: data.webhook_body
+      //   }
+      // }
 
       LNbits.api
         .request(
@@ -312,7 +320,14 @@ new Vue({
         this.withdrawLinks,
         'withdraw-links'
       )
-    }
+    },
+    ifObjStringify(str){
+      try {
+        JSON.parse(str)
+        return str
+      } catch {
+        return JSON.stringify(str)
+      }}
   },
   created: function () {
     if (this.g.user.wallets.length) {
