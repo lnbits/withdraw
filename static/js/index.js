@@ -113,7 +113,8 @@ new Vue({
     closeFormDialog: function () {
       this.formDialog.data = {
         is_unique: false,
-        use_custom: false
+        use_custom: false,
+        has_webhook: false
       }
     },
     simplecloseFormDialog: function () {
@@ -225,6 +226,7 @@ new Vue({
           })
           self.withdrawLinks.push(mapWithdrawLink(response.data))
           self.formDialog.show = false
+          this.closeFormDialog()
         })
         .catch(function (error) {
           LNbits.utils.notifyApiError(error)
@@ -239,6 +241,7 @@ new Vue({
           self.withdrawLinks.push(mapWithdrawLink(response.data))
           self.formDialog.show = false
           self.simpleformDialog.show = false
+          this.closeFormDialog()
         })
         .catch(function (error) {
           LNbits.utils.notifyApiError(error)
