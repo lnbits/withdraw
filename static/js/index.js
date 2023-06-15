@@ -212,15 +212,6 @@ new Vue({
         'custom_url'
       )
 
-      // if (data.has_webhook) {
-      //   body = {
-      //     ...body,
-      //     webhook_url: data.webhook_url,
-      //     webhook_headers: data.webhook_headers,
-      //     webhook_body: data.webhook_body
-      //   }
-      // }
-
       LNbits.api
         .request(
           'PUT',
