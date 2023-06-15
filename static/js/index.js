@@ -158,13 +158,7 @@ new Vue({
           minutes: 60,
           hours: 3600
         }[this.formDialog.secondMultiplier]
-        
-        if(data.webhook_headers){
-          data.webhook_headers = this.ifObjStringify(data.webhook_headers)
-        } 
-        if(data.webhook_body){
-          data.webhook_body = this.ifObjStringify(data.webhook_body)
-        }
+
       if (data.id) {
         this.updateWithdrawLink(wallet, data)
       } else {
@@ -185,11 +179,11 @@ new Vue({
       if (!data.use_custom) {
         data.custom_url = null
       }
-      
+
       if (data.use_custom && !data?.custom_url) {
         data.custom_url = '/static/images/default_voucher.png'
       }
-      
+
       if (data.id) {
         this.updateWithdrawLink(wallet, data)
       } else {
@@ -312,13 +306,6 @@ new Vue({
         'withdraw-links'
       )
     },
-    ifObjStringify(str){
-      try {
-        JSON.parse(str)
-        return str
-      } catch {
-        return JSON.stringify(str)
-      }}
   },
   created: function () {
     if (this.g.user.wallets.length) {
