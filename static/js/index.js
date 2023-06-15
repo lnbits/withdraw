@@ -192,26 +192,20 @@ new Vue({
     },
     updateWithdrawLink: function (wallet, data) {
       var self = this
-      let body = _.pick(
-        data,
-        'title',
-        'min_withdrawable',
-        'max_withdrawable',
-        'uses',
-        'wait_time',
-        'is_unique',
-        'webhook_url',
-        'webhook_headers',
-        'webhook_body',
-        'custom_url'
-      )
+      
+      // Remove webhook info if toggle is set to false
+      if (!data.has_webhook) {
+        data.webhook_url = null
+        data.webhook_headers = null
+        data.webhook_body = null
+      }
 
       LNbits.api
         .request(
           'PUT',
           '/withdraw/api/v1/links/' + data.id,
           wallet.adminkey,
-          body
+          data
         )
         .then(function (response) {
           self.withdrawLinks = _.reject(self.withdrawLinks, function (obj) {
