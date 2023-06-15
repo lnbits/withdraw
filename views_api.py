@@ -1,4 +1,5 @@
 from http import HTTPStatus
+import json
 
 from fastapi import Depends, HTTPException, Query, Request
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
@@ -82,6 +83,24 @@ async def api_link_create_or_update(
             detail="`max_withdrawable` needs to be at least `min_withdrawable`.",
             status_code=HTTPStatus.BAD_REQUEST,
         )
+
+    if data.webhook_body:
+        try:
+            json.loads(data.webhook_body)
+        except:
+            raise HTTPException(
+                detail="`webhook_body` can not parse JSON.",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+
+    if data.webhook_headers:
+        try:
+            json.loads(data.webhook_headers)
+        except:
+            raise HTTPException(
+                detail="`webhook_headers` can not parse JSON.",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
 
     if link_id:
         link = await get_withdraw_link(link_id, 0)
