@@ -207,7 +207,7 @@ new Vue({
           wallet.adminkey,
           data
         )
-        .then(function (response) {
+        .then((response) => {
           self.withdrawLinks = _.reject(self.withdrawLinks, function (obj) {
             return obj.id === data.id
           })
@@ -224,7 +224,7 @@ new Vue({
 
       LNbits.api
         .request('POST', '/withdraw/api/v1/links', wallet.adminkey, data)
-        .then(function (response) {
+        .then((response) => {
           self.withdrawLinks.push(mapWithdrawLink(response.data))
           self.formDialog.show = false
           self.simpleformDialog.show = false
