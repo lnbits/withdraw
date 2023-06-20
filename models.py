@@ -59,14 +59,14 @@ class WithdrawLink(BaseModel):
                 "withdraw.api_lnurl_response", unique_hash=self.unique_hash
             )
 
-        return lnurl_encode(url)
+        return lnurl_encode(str(url))
 
     def lnurl_response(self, req: Request) -> LnurlWithdrawResponse:
         url = req.url_for(
             name="withdraw.api_lnurl_callback", unique_hash=self.unique_hash
         )
         return LnurlWithdrawResponse(
-            callback=ClearnetUrl(url, scheme="https"),
+            callback=ClearnetUrl(str(url), scheme="https"),
             k1=self.k1,
             minWithdrawable=MilliSatoshi(self.min_withdrawable * 1000),
             maxWithdrawable=MilliSatoshi(self.max_withdrawable * 1000),
