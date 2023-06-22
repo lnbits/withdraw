@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Optional
 
 from fastapi import Depends, HTTPException, Query, Request
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
@@ -66,7 +67,7 @@ async def api_link_retrieve(
 async def api_link_create_or_update(
     req: Request,
     data: CreateWithdrawData,
-    link_id: str = Query(None),
+    link_id: Optional[str] = None,
     wallet: WalletTypeInfo = Depends(require_admin_key),
 ):
     if data.uses > 250:
