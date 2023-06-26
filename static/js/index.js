@@ -52,7 +52,7 @@ new Vue({
           {
             name: 'uses_left',
             align: 'right',
-            label: 'Uses left (Total)',
+            label: 'Uses left',
             field: 'uses_left'
           },
           {name: 'min', align: 'right', label: 'Min (sat)', field: 'min_fsat'},
