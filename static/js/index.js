@@ -44,9 +44,15 @@ new Vue({
             field: 'wait_time'
           },
           {
+            name: 'uses',
+            align: 'right',
+            label: 'Created',
+            field: 'uses'
+          },
+          {
             name: 'uses_left',
             align: 'right',
-            label: 'Uses left',
+            label: 'Uses left (Total)',
             field: 'uses_left'
           },
           {name: 'min', align: 'right', label: 'Min (sat)', field: 'min_fsat'},
