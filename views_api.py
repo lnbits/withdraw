@@ -115,7 +115,16 @@ async def api_link_create_or_update(
             )
         
         data_dict = data.dict() 
-        if(link.uses < data.uses):
+        if link.uses > data.uses:
+            if data.uses - link.used <= 0:
+                raise HTTPException(
+                    detail="Cannot reduce uses below current used.", status_code=HTTPStatus.BAD_REQUEST
+                )
+            numbers = link.usescsv.split(",")
+            usescsv = ",".join(numbers[:data.uses - link.used])
+            data_dict["usescsv"] = usescsv
+
+        if link.uses < data.uses:
             numbers = link.usescsv.split(",")
             current_number = int(numbers[-1])
             while len(numbers) < (data.uses - link.used):
