@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request, Response
 from fastapi.routing import APIRoute
 
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 
 from lnbits.db import Database
@@ -13,7 +12,6 @@ db = Database("ext_withdraw")
 withdraw_static_files = [
     {
         "path": "/withdraw/static",
-        "app": StaticFiles(packages=[("lnbits", "extensions/withdraw/static")]),
         "name": "withdraw_static",
     }
 ]
@@ -45,7 +43,7 @@ withdraw_ext.route_class = LNURLErrorResponseHandler
 
 
 def withdraw_renderer():
-    return template_renderer(["lnbits/extensions/withdraw/templates"])
+    return template_renderer(["withdraw/templates"])
 
 
 from .lnurl import *  # noqa: F401,F403
