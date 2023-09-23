@@ -1,4 +1,3 @@
-name: release github version
 on:
   push:
     tags:
@@ -37,7 +36,7 @@ jobs:
           GH_TOKEN: ${{ secrets.EXT_GITHUB }}
           repo_name: "${{ github.event.repository.name }}"
           tag: "${{ github.ref_name }}"
-          branch: "update-${{ github.event.repository.name }}"
+          branch: "update-${{ github.event.repository.name }}-${{ github.ref_name }}"
           title: "[UPDATE] ${{ github.event.repository.name }} to ${{ github.ref_name }}"
           body: "https://github.com/lnbits/${{ github.event.repository.name }}/releases/${{ github.ref_name }}"
           archive: "https://github.com/lnbits/${{ github.event.repository.name }}/archive/refs/tags/${{ github.ref_name }}.zip"
