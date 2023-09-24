@@ -113,7 +113,8 @@ new Vue({
     closeFormDialog: function () {
       this.formDialog.data = {
         is_unique: false,
-        use_custom: false
+        use_custom: false,
+        has_webhook: false
       }
     },
     simplecloseFormDialog: function () {
@@ -132,6 +133,7 @@ new Vue({
     },
     openUpdateDialog: function (linkId) {
       var link = _.findWhere(this.withdrawLinks, {id: linkId})
+      link._data.has_webhook = link._data.webhook_url ? true : false
       this.formDialog.data = _.clone(link._data)
       this.formDialog.show = true
     },
@@ -156,6 +158,7 @@ new Vue({
           minutes: 60,
           hours: 3600
         }[this.formDialog.secondMultiplier]
+
       if (data.id) {
         this.updateWithdrawLink(wallet, data)
       } else {
@@ -189,27 +192,12 @@ new Vue({
     },
     updateWithdrawLink: function (wallet, data) {
       var self = this
-      const body = _.pick(
-        data,
-        'title',
-        'min_withdrawable',
-        'max_withdrawable',
-        'uses',
-        'wait_time',
-        'is_unique',
-        'webhook_url',
-        'webhook_headers',
-        'webhook_body',
-        'custom_url'
-      )
-
-      if (data.has_webhook) {
-        body = {
-          ...body,
-          webhook_url: data.webhook_url,
-          webhook_headers: data.webhook_headers,
-          webhook_body: data.webhook_body
-        }
+      
+      // Remove webhook info if toggle is set to false
+      if (!data.has_webhook) {
+        data.webhook_url = null
+        data.webhook_headers = null
+        data.webhook_body = null
       }
 
       LNbits.api
@@ -217,14 +205,15 @@ new Vue({
           'PUT',
           '/withdraw/api/v1/links/' + data.id,
           wallet.adminkey,
-          body
+          data
         )
-        .then(function (response) {
+        .then((response) => {
           self.withdrawLinks = _.reject(self.withdrawLinks, function (obj) {
             return obj.id === data.id
           })
           self.withdrawLinks.push(mapWithdrawLink(response.data))
           self.formDialog.show = false
+          this.closeFormDialog()
         })
         .catch(function (error) {
           LNbits.utils.notifyApiError(error)
@@ -235,10 +224,11 @@ new Vue({
 
       LNbits.api
         .request('POST', '/withdraw/api/v1/links', wallet.adminkey, data)
-        .then(function (response) {
+        .then((response) => {
           self.withdrawLinks.push(mapWithdrawLink(response.data))
           self.formDialog.show = false
           self.simpleformDialog.show = false
+          this.closeFormDialog()
         })
         .catch(function (error) {
           LNbits.utils.notifyApiError(error)
@@ -309,7 +299,7 @@ new Vue({
         this.withdrawLinks,
         'withdraw-links'
       )
-    }
+    },
   },
   created: function () {
     if (this.g.user.wallets.length) {
