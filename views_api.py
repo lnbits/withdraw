@@ -113,7 +113,27 @@ async def api_link_create_or_update(
             raise HTTPException(
                 detail="Not your withdraw link.", status_code=HTTPStatus.FORBIDDEN
             )
-        link = await update_withdraw_link(link_id, **data.dict())
+        
+        data_dict = data.dict() 
+        if link.uses > data.uses:
+            if data.uses - link.used <= 0:
+                raise HTTPException(
+                    detail="Cannot reduce uses below current used.", status_code=HTTPStatus.BAD_REQUEST
+                )
+            numbers = link.usescsv.split(",")
+            usescsv = ",".join(numbers[:data.uses - link.used])
+            data_dict["usescsv"] = usescsv
+
+        if link.uses < data.uses:
+            numbers = link.usescsv.split(",")
+            current_number = int(numbers[-1])
+            while len(numbers) < (data.uses - link.used):
+                current_number += 1
+                numbers.append(str(current_number))
+            usescsv = ",".join(numbers)
+            data_dict["usescsv"] = usescsv
+                        
+        link = await update_withdraw_link(link_id, **data_dict)
     else:
         link = await create_withdraw_link(wallet_id=wallet.wallet.id, data=data)
     assert link

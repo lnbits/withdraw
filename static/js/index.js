@@ -44,6 +44,12 @@ new Vue({
             field: 'wait_time'
           },
           {
+            name: 'uses',
+            align: 'right',
+            label: 'Created',
+            field: 'uses'
+          },
+          {
             name: 'uses_left',
             align: 'right',
             label: 'Uses left',
