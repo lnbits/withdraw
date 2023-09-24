@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from http import HTTPStatus
+from urllib.parse import urlparse
 
 import httpx
 import shortuuid
@@ -38,6 +39,12 @@ async def api_lnurl_response(request: Request, unique_hash: str):
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw is spent."
         )
     url = request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
+
+    # Check if url is .onion and change to http
+    if urlparse(url).netloc.endswith(".onion"):
+        # change url string scheme to http
+        url = url.replace("https://", "http://")
+
     return {
         "tag": "withdrawRequest",
         "callback": url,
@@ -189,6 +196,12 @@ async def api_lnurl_multi_response(request: Request, unique_hash: str, id_unique
         )
 
     url = request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
+
+    # Check if url is .onion and change to http
+    if urlparse(url).netloc.endswith(".onion"):
+        # change url string scheme to http
+        url = url.replace("https://", "http://")
+
     return {
         "tag": "withdrawRequest",
         "callback": f"{url}?id_unique_hash={id_unique_hash}",
