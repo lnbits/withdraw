@@ -4,7 +4,8 @@ from http import HTTPStatus
 
 import httpx
 import shortuuid
-from fastapi import HTTPException, Query, Request, Response
+from fastapi import HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from loguru import logger
 
 from lnbits.core.crud import update_payment_extra
@@ -21,10 +22,10 @@ from .models import WithdrawLink
 
 @withdraw_ext.get(
     "/api/v1/lnurl/{unique_hash}",
-    response_class=Response,
+    response_class=JSONResponse,
     name="withdraw.api_lnurl_response",
 )
-async def api_lnurl_response(request: Request, unique_hash):
+async def api_lnurl_response(request: Request, unique_hash: str):
     link = await get_withdraw_link_by_hash(unique_hash)
 
     if not link:
@@ -37,7 +38,7 @@ async def api_lnurl_response(request: Request, unique_hash):
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw is spent."
         )
     url = request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
-    withdrawResponse = {
+    return {
         "tag": "withdrawRequest",
         "callback": url,
         "k1": link.k1,
@@ -49,8 +50,6 @@ async def api_lnurl_response(request: Request, unique_hash):
         "webhook_body": link.webhook_body,
     }
 
-    return json.dumps(withdrawResponse)
-
 
 @withdraw_ext.get(
     "/api/v1/lnurl/cb/{unique_hash}",
@@ -60,6 +59,7 @@ async def api_lnurl_response(request: Request, unique_hash):
         This endpoints allows you to put unique_hash, k1
         and a payment_request to get your payment_request paid.
     """,
+    response_class=JSONResponse,
     response_description="JSON with status",
     responses={
         200: {"description": "status: OK"},
@@ -156,7 +156,7 @@ async def dispatch_webhook(
             )
         except Exception as exc:
             # webhook fails shouldn't cause the lnurlw to fail since invoice is already paid
-            logger.error("Caught exception when dispatching webhook url: " + str(exc))
+            logger.error(f"Caught exception when dispatching webhook url: {str(exc)}")
             await update_payment_extra(
                 payment_hash=payment_hash,
                 extra={"wh_success": False, "wh_message": str(exc)},
@@ -167,10 +167,10 @@ async def dispatch_webhook(
 # FOR LNURLs WHICH ARE UNIQUE
 @withdraw_ext.get(
     "/api/v1/lnurl/{unique_hash}/{id_unique_hash}",
-    response_class=Response,
+    response_class=JSONResponse,
     name="withdraw.api_lnurl_multi_response",
 )
-async def api_lnurl_multi_response(request: Request, unique_hash, id_unique_hash):
+async def api_lnurl_multi_response(request: Request, unique_hash: str, id_unique_hash: str):
     link = await get_withdraw_link_by_hash(unique_hash)
 
     if not link:
@@ -189,12 +189,11 @@ async def api_lnurl_multi_response(request: Request, unique_hash, id_unique_hash
         )
 
     url = request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
-    withdrawResponse = {
+    return {
         "tag": "withdrawRequest",
-        "callback": url + "?id_unique_hash=" + id_unique_hash,
+        "callback": f"{url}?id_unique_hash={id_unique_hash}",
         "k1": link.k1,
         "minWithdrawable": link.min_withdrawable * 1000,
         "maxWithdrawable": link.max_withdrawable * 1000,
         "defaultDescription": link.title,
     }
-    return json.dumps(withdrawResponse)
