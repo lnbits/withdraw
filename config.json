@@ -1,6 +1,7 @@
 {
   "name": "LNURLw",
   "short_description": "Make LNURL withdraw links",
-	"tile": "/withdraw/static/image/lnurl-withdraw.png",
-  "contributors": ["arcbtc", "eillarra"]
+  "tile": "/withdraw/static/image/lnurl-withdraw.png",
+  "contributors": ["arcbtc", "eillarra"],
+  "min_lnbits_version": "0.11.0"
 }
