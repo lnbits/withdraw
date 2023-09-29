@@ -49,24 +49,24 @@ class WithdrawLink(BaseModel):
             usescssv = self.usescsv.split(",")
             tohash = self.id + self.unique_hash + usescssv[self.number]
             multihash = shortuuid.uuid(name=tohash)
-            url = req.url_for(
+            url = str(req.url_for(
                 "withdraw.api_lnurl_multi_response",
                 unique_hash=self.unique_hash,
                 id_unique_hash=multihash,
-            )
+            ))
         else:
-            url = req.url_for(
+            url = str(req.url_for(
                 "withdraw.api_lnurl_response", unique_hash=self.unique_hash
-            )
+            ))
 
-        return lnurl_encode(str(url))
+        return lnurl_encode(url)
 
     def lnurl_response(self, req: Request) -> LnurlWithdrawResponse:
-        url = req.url_for(
+        url = str(req.url_for(
             name="withdraw.api_lnurl_callback", unique_hash=self.unique_hash
-        )
+        ))
         return LnurlWithdrawResponse(
-            callback=ClearnetUrl(str(url), scheme="https"),
+            callback=ClearnetUrl(url, scheme="https"),
             k1=self.k1,
             minWithdrawable=MilliSatoshi(self.min_withdrawable * 1000),
             maxWithdrawable=MilliSatoshi(self.max_withdrawable * 1000),

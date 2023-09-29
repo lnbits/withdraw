@@ -38,7 +38,7 @@ async def api_lnurl_response(request: Request, unique_hash: str):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw is spent."
         )
-    url = request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
+    url = str(request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash))
 
     # Check if url is .onion and change to http
     if urlparse(url).netloc.endswith(".onion"):
@@ -195,7 +195,7 @@ async def api_lnurl_multi_response(request: Request, unique_hash: str, id_unique
             status_code=HTTPStatus.NOT_FOUND, detail="LNURL-withdraw not found."
         )
 
-    url = request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
+    url = str(request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash))
 
     # Check if url is .onion and change to http
     if urlparse(url).netloc.endswith(".onion"):
