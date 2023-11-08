@@ -71,8 +71,8 @@ async def api_link_create_or_update(
     link_id: Optional[str] = None,
     wallet: WalletTypeInfo = Depends(require_admin_key),
 ):
-    if data.uses > 250:
-        raise HTTPException(detail="250 uses max.", status_code=HTTPStatus.BAD_REQUEST)
+    if data.uses > 1000:
+        raise HTTPException(detail="1000 uses max.", status_code=HTTPStatus.BAD_REQUEST)
 
     if data.min_withdrawable < 1:
         raise HTTPException(
