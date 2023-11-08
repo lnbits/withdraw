@@ -167,23 +167,23 @@
           dense
           v-model.number="formDialog.data.min_withdrawable"
           type="number"
-          min="10"
-          label="Min withdrawable (sat, at least 10) *"
+          min="1"
+          label="Min withdrawable (sat, at least 1) *"
         ></q-input>
         <q-input
           filled
           dense
           v-model.number="formDialog.data.max_withdrawable"
           type="number"
-          min="10"
-          label="Max withdrawable (sat, at least 10) *"
+          min="1"
+          label="Max withdrawable (sat, at least 1) *"
         ></q-input>
         <q-input
           filled
           dense
           v-model.number="formDialog.data.uses"
           type="number"
-          max="250"
+          max="1000"
           :default="1"
           label="Amount of uses *"
         ></q-input>
@@ -341,15 +341,15 @@
           dense
           v-model.number="simpleformDialog.data.max_withdrawable"
           type="number"
-          min="10"
-          label="Withdraw amount per voucher (sat, at least 10)"
+          min="1"
+          label="Withdraw amount per voucher (sat, at least 1)"
         ></q-input>
         <q-input
           filled
           dense
           v-model.number="simpleformDialog.data.uses"
           type="number"
-          max="250"
+          max="1000"
           :default="1"
           label="Number of vouchers"
         ></q-input>
