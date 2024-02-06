@@ -111,13 +111,13 @@ async def api_lnurl_callback(
             )
 
     try:
+        await increment_withdraw_link(link)
         payment_hash = await pay_invoice(
             wallet_id=link.wallet,
             payment_request=pr,
             max_sat=link.max_withdrawable,
             extra={"tag": "withdraw"},
         )
-        await increment_withdraw_link(link)
         if link.webhook_url:
             await dispatch_webhook(link, payment_hash, pr)
         return {"status": "OK"}
