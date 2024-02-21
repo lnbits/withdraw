@@ -116,7 +116,7 @@ async def api_lnurl_callback(
             wallet_id=link.wallet,
             payment_request=pr,
             max_sat=link.max_withdrawable,
-            extra={"tag": "withdraw"},
+            extra={"tag": "withdraw", "withdrawal_link_id": link.id},
         )
         if link.webhook_url:
             await dispatch_webhook(link, payment_hash, pr)
