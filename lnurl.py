@@ -16,6 +16,7 @@ from . import withdraw_ext
 from .crud import (
     get_withdraw_link_by_hash,
     increment_withdraw_link,
+    unincrement_withdraw_link,
     remove_unique_withdraw_link,
 )
 from .models import WithdrawLink
@@ -92,7 +93,7 @@ async def api_lnurl_callback(
         raise HTTPException(
             status_code=HTTPStatus.METHOD_NOT_ALLOWED, detail="withdraw is spent."
         )
-
+    await increment_withdraw_link(link)
     if link.k1 != k1:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="k1 is wrong.")
 
@@ -111,7 +112,6 @@ async def api_lnurl_callback(
             )
 
     try:
-        await increment_withdraw_link(link)
         payment_hash = await pay_invoice(
             wallet_id=link.wallet,
             payment_request=pr,
@@ -122,6 +122,7 @@ async def api_lnurl_callback(
             await dispatch_webhook(link, payment_hash, pr)
         return {"status": "OK"}
     except Exception as e:
+        await unincrement_withdraw_link(link)
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {str(e)}"
         )
