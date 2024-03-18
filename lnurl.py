@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from http import HTTPStatus
+from threading import Lock
 from urllib.parse import urlparse
 
 import httpx
@@ -21,6 +22,7 @@ from .crud import (
 )
 from .models import WithdrawLink
 
+withdraw_lock = Lock()
 
 @withdraw_ext.get(
     "/api/v1/lnurl/{unique_hash}",
@@ -112,6 +114,8 @@ async def api_lnurl_callback(
             )
 
     try:
+        withdraw_lock.acquire()
+        await increment_withdraw_link(link)
         payment_hash = await pay_invoice(
             wallet_id=link.wallet,
             payment_request=pr,
@@ -126,6 +130,8 @@ async def api_lnurl_callback(
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {str(e)}"
         )
+    finally:
+        withdraw_lock.release()
 
 
 def check_unique_link(link: WithdrawLink, unique_hash: str) -> bool:
