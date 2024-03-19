@@ -129,7 +129,6 @@ async def update_withdraw_link(link_id: str, **kwargs) -> Optional[WithdrawLink]
     )
     return WithdrawLink(**row) if row else None
 
-
 async def delete_withdraw_link(link_id: str) -> None:
     await db.execute("DELETE FROM withdraw.withdraw_link WHERE id = ?", (link_id,))
 
