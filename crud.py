@@ -116,6 +116,7 @@ async def increment_withdraw_link(link: WithdrawLink) -> None:
         open_time=link.wait_time + int(datetime.now().timestamp()),
     )
 
+
 async def update_withdraw_link(link_id: str, **kwargs) -> Optional[WithdrawLink]:
     if "is_unique" in kwargs:
         kwargs["is_unique"] = int(kwargs["is_unique"])
@@ -128,6 +129,7 @@ async def update_withdraw_link(link_id: str, **kwargs) -> Optional[WithdrawLink]
         "SELECT * FROM withdraw.withdraw_link WHERE id = ?", (link_id,)
     )
     return WithdrawLink(**row) if row else None
+
 
 async def delete_withdraw_link(link_id: str) -> None:
     await db.execute("DELETE FROM withdraw.withdraw_link WHERE id = ?", (link_id,))
