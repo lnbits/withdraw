@@ -16,12 +16,11 @@ from . import withdraw_ext
 from .crud import (
     get_withdraw_link_by_hash,
     increment_withdraw_link,
+    unincrement_withdraw_link,
     remove_unique_withdraw_link,
 )
 from .models import WithdrawLink
-from .helpers import NamedLock
 
-withdraw_lock = NamedLock()
 
 @withdraw_ext.get(
     "/api/v1/lnurl/{unique_hash}",
@@ -83,31 +82,6 @@ async def api_lnurl_callback(
     pr: str = Query(...),
     id_unique_hash=None,
 ):
-    link = await _check_withdraw_link_safe(unique_hash, k1, id_unique_hash)
-
-    try:
-        payment_hash = await pay_invoice(
-            wallet_id=link.wallet,
-            payment_request=pr,
-            max_sat=link.max_withdrawable,
-            extra={"tag": "withdraw", "withdrawal_link_id": link.id},
-        )
-        if link.webhook_url:
-            await dispatch_webhook(link, payment_hash, pr)
-        return {"status": "OK"}
-    except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {str(e)}"
-        )
-
-async def _check_withdraw_link_safe(unique_hash, k1, id_unique_hash) -> WithdrawLink:
-    try:
-        withdraw_lock.acquire(unique_hash)
-        return await _check_withdraw_link(unique_hash, k1, id_unique_hash)
-    finally:
-        withdraw_lock.release(unique_hash)
-
-async def _check_withdraw_link(unique_hash, k1, id_unique_hash) -> WithdrawLink:
     link = await get_withdraw_link_by_hash(unique_hash)
     now = int(datetime.now().timestamp())
     if not link:
@@ -119,11 +93,9 @@ async def _check_withdraw_link(unique_hash, k1, id_unique_hash) -> WithdrawLink:
         raise HTTPException(
             status_code=HTTPStatus.METHOD_NOT_ALLOWED, detail="withdraw is spent."
         )
-
+    await increment_withdraw_link(link)
     if link.k1 != k1:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="k1 is wrong."
-        )
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="k1 is wrong.")
 
     if now < link.open_time:
         raise HTTPException(
@@ -138,13 +110,22 @@ async def _check_withdraw_link(unique_hash, k1, id_unique_hash) -> WithdrawLink:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="withdraw not found."
             )
-    await increment_withdraw_link(link)
 
-    return link
-
-
-
-
+    try:
+        payment_hash = await pay_invoice(
+            wallet_id=link.wallet,
+            payment_request=pr,
+            max_sat=link.max_withdrawable,
+            extra={"tag": "withdraw", "withdrawal_link_id": link.id},
+        )
+        if link.webhook_url:
+            await dispatch_webhook(link, payment_hash, pr)
+        return {"status": "OK"}
+    except Exception as e:
+        await unincrement_withdraw_link(link)
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {str(e)}"
+        )
 
 
 def check_unique_link(link: WithdrawLink, unique_hash: str) -> bool:
