@@ -116,13 +116,6 @@ async def increment_withdraw_link(link: WithdrawLink) -> None:
         open_time=link.wait_time + int(datetime.now().timestamp()),
     )
 
-async def unincrement_withdraw_link(link: WithdrawLink) -> None:
-    await update_withdraw_link(
-        link.id,
-        used=link.used - 1,
-        open_time=link.wait_time + int(datetime.now().timestamp()),
-    )
-
 async def update_withdraw_link(link_id: str, **kwargs) -> Optional[WithdrawLink]:
     if "is_unique" in kwargs:
         kwargs["is_unique"] = int(kwargs["is_unique"])

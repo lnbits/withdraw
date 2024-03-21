@@ -16,7 +16,6 @@ from . import withdraw_ext
 from .crud import (
     get_withdraw_link_by_hash,
     increment_withdraw_link,
-    unincrement_withdraw_link,
     remove_unique_withdraw_link,
     delete_hash_check,
     create_hash_check
@@ -105,8 +104,6 @@ async def api_lnurl_callback(
         raise HTTPException(
             status_code=HTTPStatus.METHOD_NOT_ALLOWED, detail="withdraw is spent."
         )
-    
-    await increment_withdraw_link(link)
 
     if link.k1 != k1:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="k1 is wrong.")
@@ -134,6 +131,7 @@ async def api_lnurl_callback(
             max_sat=link.max_withdrawable,
             extra={"tag": "withdraw", "withdrawal_link_id": link.id},
         )
+        await increment_withdraw_link(link)
         # If the payment succeeds, delete the record with the unique_hash. If it has unique_hash, do not delete to prevent the same LNURL from being processed twice.
         if not id_unique_hash:
             await delete_hash_check(unique_hash)
@@ -146,7 +144,6 @@ async def api_lnurl_callback(
             await delete_hash_check(id_unique_hash)
         else:
             await delete_hash_check(unique_hash)
-        await unincrement_withdraw_link(link)
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {str(e)}"
         )
