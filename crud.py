@@ -177,3 +177,6 @@ async def get_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
             return HashCheck(lnurl=True, hash=False)
         else:
             return HashCheck(lnurl=True, hash=True)
+
+async def delete_hash_check(the_hash: str) -> None:
+    await db.execute("DELETE FROM withdraw.hash_check WHERE id = ?", (the_hash,))

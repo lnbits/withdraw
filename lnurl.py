@@ -18,6 +18,8 @@ from .crud import (
     increment_withdraw_link,
     unincrement_withdraw_link,
     remove_unique_withdraw_link,
+    delete_hash_check,
+    create_hash_check
 )
 from .models import WithdrawLink
 
@@ -81,9 +83,14 @@ async def api_lnurl_callback(
     k1: str = Query(...),
     pr: str = Query(...),
     id_unique_hash=None,
-):
+):  
+    try:
+        await create_hash_check(unique_hash, k1)
+    except Exception as e:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="LNURL already being processed."
+        )
     link = await get_withdraw_link_by_hash(unique_hash)
-    now = int(datetime.now().timestamp())
     if not link:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="withdraw not found."
@@ -93,10 +100,14 @@ async def api_lnurl_callback(
         raise HTTPException(
             status_code=HTTPStatus.METHOD_NOT_ALLOWED, detail="withdraw is spent."
         )
+    
     await increment_withdraw_link(link)
+
     if link.k1 != k1:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="k1 is wrong.")
-
+    
+    now = int(datetime.now().timestamp())
+    
     if now < link.open_time:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
@@ -118,6 +129,7 @@ async def api_lnurl_callback(
             max_sat=link.max_withdrawable,
             extra={"tag": "withdraw", "withdrawal_link_id": link.id},
         )
+        await delete_hash_check(unique_hash)
         if link.webhook_url:
             await dispatch_webhook(link, payment_hash, pr)
         return {"status": "OK"}
