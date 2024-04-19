@@ -1,9 +1,9 @@
 {
-    "repos": [
-        {
-            "id": "withdraw",
-            "organisation": "lnbits",
-            "repository": "withdraw"
-        }
-    ]
+  "repos": [
+    {
+      "id": "withdraw",
+      "organisation": "lnbits",
+      "repository": "withdraw"
+    }
+  ]
 }
