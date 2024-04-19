@@ -28,6 +28,8 @@ module = [
   "fastapi.*",
   "pydantic.*",
   "pyqrcode.*",
+  "shortuuid.*",
+  "httpx.*",
 ]
 ignore_missing_imports = "True"
 
