@@ -3,10 +3,10 @@ from io import BytesIO
 
 import pyqrcode
 from fastapi import Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
-from starlette.responses import HTMLResponse, StreamingResponse
 
 from . import withdraw_ext, withdraw_renderer
 from .crud import chunks, get_withdraw_link
@@ -85,7 +85,7 @@ async def print_qr(request: Request, link_id):
     links = []
     count = 0
 
-    for x in link.usescsv.split(","):
+    for _ in link.usescsv.split(","):
         linkk = await get_withdraw_link(link_id, count)
         if not linkk:
             raise HTTPException(
@@ -132,7 +132,7 @@ async def csv(request: Request, link_id):
     links = []
     count = 0
 
-    for x in link.usescsv.split(","):
+    for _ in link.usescsv.split(","):
         linkk = await get_withdraw_link(link_id, count)
         if not linkk:
             raise HTTPException(

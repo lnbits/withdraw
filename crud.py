@@ -91,7 +91,10 @@ async def get_withdraw_links(wallet_ids: Union[str, List[str]]) -> List[Withdraw
 
     q = ",".join(["?"] * len(wallet_ids))
     rows = await db.fetchall(
-        f"SELECT * FROM withdraw.withdraw_link WHERE wallet IN ({q}) ORDER BY open_time DESC",
+        f"""
+        SELECT * FROM withdraw.withdraw_link
+        WHERE wallet IN ({q}) ORDER BY open_time DESC
+        """,
         (*wallet_ids,),
     )
     return [WithdrawLink(**row) for row in rows]
@@ -151,8 +154,8 @@ async def create_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
         """,
         (the_hash, lnurl_id),
     )
-    hashCheck = await get_hash_check(the_hash, lnurl_id)
-    return hashCheck
+    hash_check = await get_hash_check(the_hash, lnurl_id)
+    return hash_check
 
 
 async def get_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
