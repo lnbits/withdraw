@@ -5,7 +5,6 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from lnbits.core.crud import get_user
 from lnbits.decorators import WalletTypeInfo, get_key_type, require_admin_key
-
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 
 from .crud import (

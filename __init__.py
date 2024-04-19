@@ -3,15 +3,11 @@ from typing import Callable
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
-from lnbits.db import Database
-from lnbits.helpers import template_renderer
 from loguru import logger
 
 from .views import withdraw_ext_generic
 from .views_api import withdraw_ext_api
 from .views_lnurl import withdraw_ext_lnurl
-
-db = Database("ext_withdraw")
 
 withdraw_static_files = [
     {

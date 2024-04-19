@@ -2,10 +2,12 @@ from datetime import datetime
 from typing import List, Optional, Union
 
 import shortuuid
+from lnbits.db import Database
 from lnbits.helpers import urlsafe_short_hash
 
-from . import db
 from .models import CreateWithdrawData, HashCheck, WithdrawLink
+
+db = Database("ext_withdraw")
 
 
 async def create_withdraw_link(
