@@ -118,10 +118,7 @@ async def api_lnurl_callback(
     # Create a record with the id_unique_hash or unique_hash, if it already exists,
     # raise an exception thus preventing the same LNURL from being processed twice.
     try:
-        if id_unique_hash:
-            await create_hash_check(id_unique_hash, k1)
-        else:
-            await create_hash_check(unique_hash, k1)
+        await create_hash_check(id_unique_hash or unique_hash, k1)
     except Exception as exc:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST, detail="LNURL already being processed."
