@@ -82,17 +82,7 @@ async def api_lnurl_callback(
     k1: str = Query(...),
     pr: str = Query(...),
     id_unique_hash=None,
-):  
-    # Create a record with the id_unique_hash or unique_hash, if it already exists, raise an exception thus preventing the same LNURL from being processed twice.
-    try:
-        if id_unique_hash:
-            await create_hash_check(id_unique_hash, k1)
-        else:
-            await create_hash_check(unique_hash, k1)
-    except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="LNURL already being processed."
-        )
+):
 
     link = await get_withdraw_link_by_hash(unique_hash)
     if not link:
@@ -107,14 +97,15 @@ async def api_lnurl_callback(
 
     if link.k1 != k1:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="k1 is wrong.")
-    
+
     now = int(datetime.now().timestamp())
-    
+
     if now < link.open_time:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
             detail=f"wait link open_time {link.open_time - now} seconds.",
         )
+
 
     if id_unique_hash:
         if check_unique_link(link, id_unique_hash):
@@ -124,6 +115,18 @@ async def api_lnurl_callback(
                 status_code=HTTPStatus.NOT_FOUND, detail="withdraw not found."
             )
 
+    # Create a record with the id_unique_hash or unique_hash, if it already exists,
+    # raise an exception thus preventing the same LNURL from being processed twice.
+    try:
+        if id_unique_hash:
+            await create_hash_check(id_unique_hash, k1)
+        else:
+            await create_hash_check(unique_hash, k1)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="LNURL already being processed."
+        ) from exc
+
     try:
         payment_hash = await pay_invoice(
             wallet_id=link.wallet,
@@ -132,21 +135,19 @@ async def api_lnurl_callback(
             extra={"tag": "withdraw", "withdrawal_link_id": link.id},
         )
         await increment_withdraw_link(link)
-        # If the payment succeeds, delete the record with the unique_hash. If it has unique_hash, do not delete to prevent the same LNURL from being processed twice.
-        if not id_unique_hash:
-            await delete_hash_check(unique_hash)
+        # If the payment succeeds, delete the record with the unique_hash.
+        # If it has unique_hash, do not delete to prevent the same LNURL from being processed twice.
+        await delete_hash_check(id_unique_hash or unique_hash)
+
         if link.webhook_url:
             await dispatch_webhook(link, payment_hash, pr)
         return {"status": "OK"}
-    except Exception as e:
+    except Exception as exc:
         # If payment fails, delete the hash stored so another attempt can be made.
-        if id_unique_hash:
-            await delete_hash_check(id_unique_hash)
-        else:
-            await delete_hash_check(unique_hash)
+        await delete_hash_check(id_unique_hash or unique_hash)
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {str(e)}"
-        )
+            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {str(exc)}"
+        ) from exc
 
 
 def check_unique_link(link: WithdrawLink, unique_hash: str) -> bool:
