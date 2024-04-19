@@ -1,12 +1,12 @@
+import json
 from http import HTTPStatus
 from typing import Optional
-import json
 
 from fastapi import Depends, HTTPException, Query, Request
-from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
-
 from lnbits.core.crud import get_user
 from lnbits.decorators import WalletTypeInfo, get_key_type, require_admin_key
+
+from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 
 from . import withdraw_ext
 from .crud import (
@@ -113,15 +113,16 @@ async def api_link_create_or_update(
             raise HTTPException(
                 detail="Not your withdraw link.", status_code=HTTPStatus.FORBIDDEN
             )
-        
-        data_dict = data.dict() 
+
+        data_dict = data.dict()
         if link.uses > data.uses:
             if data.uses - link.used <= 0:
                 raise HTTPException(
-                    detail="Cannot reduce uses below current used.", status_code=HTTPStatus.BAD_REQUEST
+                    detail="Cannot reduce uses below current used.",
+                    status_code=HTTPStatus.BAD_REQUEST,
                 )
             numbers = link.usescsv.split(",")
-            usescsv = ",".join(numbers[:data.uses - link.used])
+            usescsv = ",".join(numbers[: data.uses - link.used])
             data_dict["usescsv"] = usescsv
 
         if link.uses < data.uses:
@@ -138,7 +139,7 @@ async def api_link_create_or_update(
                 numbers.append(str(current_number))
             usescsv = ",".join(numbers)
             data_dict["usescsv"] = usescsv
-                        
+
         link = await update_withdraw_link(link_id, **data_dict)
     else:
         link = await create_withdraw_link(wallet_id=wallet.wallet.id, data=data)
