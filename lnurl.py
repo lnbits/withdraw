@@ -144,8 +144,8 @@ async def api_lnurl_callback(
         # If payment fails, delete the hash stored so another attempt can be made.
         await delete_hash_check(id_unique_hash or unique_hash)
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {e!s}"
-        )
+            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {exc!s}"
+        ) from exc
 
 
 def check_unique_link(link: WithdrawLink, unique_hash: str) -> bool:
@@ -183,7 +183,8 @@ async def dispatch_webhook(
                 outgoing=True,
             )
         except Exception as exc:
-            # webhook fails shouldn't cause the lnurlw to fail since invoice is already paid
+            # webhook fails shouldn't cause the lnurlw to fail
+            # since invoice is already paid
             logger.error(f"Caught exception when dispatching webhook url: {exc!s}")
             await update_payment_extra(
                 payment_hash=payment_hash,

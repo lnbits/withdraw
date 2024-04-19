@@ -38,11 +38,14 @@ async def api_links(
             for link in await get_withdraw_links(wallet_ids)
         ]
 
-    except LnurlInvalidUrl:
+    except LnurlInvalidUrl as exc:
         raise HTTPException(
             status_code=HTTPStatus.UPGRADE_REQUIRED,
-            detail="LNURLs need to be delivered over a publically accessible `https` domain or Tor.",
-        )
+            detail="""
+                LNURLs need to be delivered over a publically
+                accessible `https` domain or Tor.
+            """,
+        ) from exc
 
 
 @withdraw_ext.get("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
@@ -88,20 +91,20 @@ async def api_link_create_or_update(
     if data.webhook_body:
         try:
             json.loads(data.webhook_body)
-        except:
+        except Exception as exc:
             raise HTTPException(
                 detail="`webhook_body` can not parse JSON.",
                 status_code=HTTPStatus.BAD_REQUEST,
-            )
+            ) from exc
 
     if data.webhook_headers:
         try:
             json.loads(data.webhook_headers)
-        except:
+        except Exception as exc:
             raise HTTPException(
                 detail="`webhook_headers` can not parse JSON.",
                 status_code=HTTPStatus.BAD_REQUEST,
-            )
+            ) from exc
 
     if link_id:
         link = await get_withdraw_link(link_id, 0)
@@ -171,5 +174,5 @@ async def api_link_delete(link_id, wallet: WalletTypeInfo = Depends(require_admi
     dependencies=[Depends(get_key_type)],
 )
 async def api_hash_retrieve(the_hash, lnurl_id):
-    hashCheck = await get_hash_check(the_hash, lnurl_id)
-    return hashCheck
+    hash_check = await get_hash_check(the_hash, lnurl_id)
+    return hash_check
