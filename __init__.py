@@ -1,10 +1,11 @@
 from typing import Callable
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from lnbits.db import Database
 from lnbits.helpers import template_renderer
+from loguru import logger
 
 db = Database("ext_withdraw")
 
