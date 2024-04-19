@@ -1,11 +1,9 @@
 import shortuuid
-from fastapi import Query
-from pydantic import BaseModel
-from starlette.requests import Request
-
+from fastapi import Query, Request
 from lnurl import Lnurl, LnurlWithdrawResponse
 from lnurl import encode as lnurl_encode
-from lnurl.models import ClearnetUrl, MilliSatoshi
+from lnurl.types import ClearnetUrl, MilliSatoshi
+from pydantic import BaseModel
 
 
 class CreateWithdrawData(BaseModel):
@@ -65,13 +63,9 @@ class WithdrawLink(BaseModel):
         return lnurl_encode(url)
 
     def lnurl_response(self, req: Request) -> LnurlWithdrawResponse:
-        url = str(
-            req.url_for(
-                name="withdraw.api_lnurl_callback", unique_hash=self.unique_hash
-            )
-        )
+        url = req.url_for("withdraw.api_lnurl_callback", unique_hash=self.unique_hash)
         return LnurlWithdrawResponse(
-            callback=ClearnetUrl(url, scheme="https"),
+            callback=ClearnetUrl(url, scheme="https"),  # type: ignore
             k1=self.k1,
             minWithdrawable=MilliSatoshi(self.min_withdrawable * 1000),
             maxWithdrawable=MilliSatoshi(self.max_withdrawable * 1000),
