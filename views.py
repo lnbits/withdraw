@@ -4,10 +4,9 @@ from io import BytesIO
 import pyqrcode
 from fastapi import Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
-from starlette.responses import HTMLResponse, StreamingResponse
-
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
+from starlette.responses import HTMLResponse, StreamingResponse
 
 from . import withdraw_ext, withdraw_renderer
 from .crud import chunks, get_withdraw_link

@@ -1,10 +1,11 @@
 import shortuuid
 from fastapi import Query
+from pydantic import BaseModel
+from starlette.requests import Request
+
 from lnurl import Lnurl, LnurlWithdrawResponse
 from lnurl import encode as lnurl_encode
 from lnurl.models import ClearnetUrl, MilliSatoshi
-from pydantic import BaseModel
-from starlette.requests import Request
 
 
 class CreateWithdrawData(BaseModel):
@@ -49,22 +50,26 @@ class WithdrawLink(BaseModel):
             usescssv = self.usescsv.split(",")
             tohash = self.id + self.unique_hash + usescssv[self.number]
             multihash = shortuuid.uuid(name=tohash)
-            url = str(req.url_for(
-                "withdraw.api_lnurl_multi_response",
-                unique_hash=self.unique_hash,
-                id_unique_hash=multihash,
-            ))
+            url = str(
+                req.url_for(
+                    "withdraw.api_lnurl_multi_response",
+                    unique_hash=self.unique_hash,
+                    id_unique_hash=multihash,
+                )
+            )
         else:
-            url = str(req.url_for(
-                "withdraw.api_lnurl_response", unique_hash=self.unique_hash
-            ))
+            url = str(
+                req.url_for("withdraw.api_lnurl_response", unique_hash=self.unique_hash)
+            )
 
         return lnurl_encode(url)
 
     def lnurl_response(self, req: Request) -> LnurlWithdrawResponse:
-        url = str(req.url_for(
-            name="withdraw.api_lnurl_callback", unique_hash=self.unique_hash
-        ))
+        url = str(
+            req.url_for(
+                name="withdraw.api_lnurl_callback", unique_hash=self.unique_hash
+            )
+        )
         return LnurlWithdrawResponse(
             callback=ClearnetUrl(url, scheme="https"),
             k1=self.k1,

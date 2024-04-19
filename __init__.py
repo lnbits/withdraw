@@ -1,11 +1,10 @@
+from typing import Callable
+
 from fastapi import APIRouter, Request, Response
-from fastapi.routing import APIRoute
-
 from fastapi.responses import JSONResponse
-
+from fastapi.routing import APIRoute
 from lnbits.db import Database
 from lnbits.helpers import template_renderer
-from typing import Callable
 
 db = Database("ext_withdraw")
 
@@ -46,6 +45,6 @@ def withdraw_renderer():
     return template_renderer(["withdraw/templates"])
 
 
-from .lnurl import *  # noqa: F401,F403
-from .views import *  # noqa: F401,F403
-from .views_api import *  # noqa: F401,F403
+from .lnurl import *  # noqa: F403
+from .views import *  # noqa: F403
+from .views_api import *  # noqa: F403

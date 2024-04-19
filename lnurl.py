@@ -7,18 +7,17 @@ import httpx
 import shortuuid
 from fastapi import HTTPException, Query, Request
 from fastapi.responses import JSONResponse
-from loguru import logger
-
 from lnbits.core.crud import update_payment_extra
 from lnbits.core.services import pay_invoice
+from loguru import logger
 
 from . import withdraw_ext
 from .crud import (
+    create_hash_check,
+    delete_hash_check,
     get_withdraw_link_by_hash,
     increment_withdraw_link,
     remove_unique_withdraw_link,
-    delete_hash_check,
-    create_hash_check
 )
 from .models import WithdrawLink
 
@@ -40,7 +39,9 @@ async def api_lnurl_response(request: Request, unique_hash: str):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw is spent."
         )
-    url = str(request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash))
+    url = str(
+        request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
+    )
 
     # Check if url is .onion and change to http
     if urlparse(url).netloc.endswith(".onion"):
@@ -143,8 +144,8 @@ async def api_lnurl_callback(
         # If payment fails, delete the hash stored so another attempt can be made.
         await delete_hash_check(id_unique_hash or unique_hash)
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {str(exc)}"
-        ) from exc
+            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {e!s}"
+        )
 
 
 def check_unique_link(link: WithdrawLink, unique_hash: str) -> bool:
@@ -167,9 +168,9 @@ async def dispatch_webhook(
                     "lnurlw": link.id,
                     "body": json.loads(link.webhook_body) if link.webhook_body else "",
                 },
-                headers=json.loads(link.webhook_headers)
-                if link.webhook_headers
-                else None,
+                headers=(
+                    json.loads(link.webhook_headers) if link.webhook_headers else None
+                ),
                 timeout=40,
             )
             await update_payment_extra(
@@ -183,7 +184,7 @@ async def dispatch_webhook(
             )
         except Exception as exc:
             # webhook fails shouldn't cause the lnurlw to fail since invoice is already paid
-            logger.error(f"Caught exception when dispatching webhook url: {str(exc)}")
+            logger.error(f"Caught exception when dispatching webhook url: {exc!s}")
             await update_payment_extra(
                 payment_hash=payment_hash,
                 extra={"wh_success": False, "wh_message": str(exc)},
@@ -197,7 +198,9 @@ async def dispatch_webhook(
     response_class=JSONResponse,
     name="withdraw.api_lnurl_multi_response",
 )
-async def api_lnurl_multi_response(request: Request, unique_hash: str, id_unique_hash: str):
+async def api_lnurl_multi_response(
+    request: Request, unique_hash: str, id_unique_hash: str
+):
     link = await get_withdraw_link_by_hash(unique_hash)
 
     if not link:
@@ -215,7 +218,9 @@ async def api_lnurl_multi_response(request: Request, unique_hash: str, id_unique
             status_code=HTTPStatus.NOT_FOUND, detail="LNURL-withdraw not found."
         )
 
-    url = str(request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash))
+    url = str(
+        request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
+    )
 
     # Check if url is .onion and change to http
     if urlparse(url).netloc.endswith(".onion"):
