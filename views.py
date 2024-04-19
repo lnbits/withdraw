@@ -7,13 +7,17 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
+from lnbits.helpers import template_renderer
 
-from . import withdraw_renderer
 from .crud import chunks, get_withdraw_link
 
 templates = Jinja2Templates(directory="templates")
 
 withdraw_ext_generic = APIRouter()
+
+
+def withdraw_renderer():
+    return template_renderer(["withdraw/templates"])
 
 
 @withdraw_ext_generic.get("", response_class=HTMLResponse)

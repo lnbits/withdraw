@@ -47,7 +47,3 @@ withdraw_ext.route_class = LNURLErrorResponseHandler
 withdraw_ext.include_router(withdraw_ext_generic)
 withdraw_ext.include_router(withdraw_ext_api)
 withdraw_ext.include_router(withdraw_ext_lnurl)
-
-
-def withdraw_renderer():
-    return template_renderer(["withdraw/templates"])
