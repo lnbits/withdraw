@@ -198,7 +198,7 @@ new Vue({
     },
     updateWithdrawLink: function (wallet, data) {
       var self = this
-      
+
       // Remove webhook info if toggle is set to false
       if (!data.has_webhook) {
         data.webhook_url = null
@@ -213,7 +213,7 @@ new Vue({
           wallet.adminkey,
           data
         )
-        .then((response) => {
+        .then(response => {
           self.withdrawLinks = _.reject(self.withdrawLinks, function (obj) {
             return obj.id === data.id
           })
@@ -230,7 +230,7 @@ new Vue({
 
       LNbits.api
         .request('POST', '/withdraw/api/v1/links', wallet.adminkey, data)
-        .then((response) => {
+        .then(response => {
           self.withdrawLinks.push(mapWithdrawLink(response.data))
           self.formDialog.show = false
           self.simpleformDialog.show = false
@@ -305,7 +305,7 @@ new Vue({
         this.withdrawLinks,
         'withdraw-links'
       )
-    },
+    }
   },
   created: function () {
     if (this.g.user.wallets.length) {
