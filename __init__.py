@@ -7,6 +7,10 @@ from lnbits.db import Database
 from lnbits.helpers import template_renderer
 from loguru import logger
 
+from .views import withdraw_ext_generic
+from .views_api import withdraw_ext_api
+from .views_lnurl import withdraw_ext_lnurl
+
 db = Database("ext_withdraw")
 
 withdraw_static_files = [
@@ -40,12 +44,10 @@ class LNURLErrorResponseHandler(APIRoute):
 
 withdraw_ext: APIRouter = APIRouter(prefix="/withdraw", tags=["withdraw"])
 withdraw_ext.route_class = LNURLErrorResponseHandler
+withdraw_ext.include_router(withdraw_ext_generic)
+withdraw_ext.include_router(withdraw_ext_api)
+withdraw_ext.include_router(withdraw_ext_lnurl)
 
 
 def withdraw_renderer():
     return template_renderer(["withdraw/templates"])
-
-
-from .lnurl import *  # noqa: F403
-from .views import *  # noqa: F403
-from .views_api import *  # noqa: F403

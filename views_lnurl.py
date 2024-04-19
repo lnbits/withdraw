@@ -5,13 +5,12 @@ from urllib.parse import urlparse
 
 import httpx
 import shortuuid
-from fastapi import HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from lnbits.core.crud import update_payment_extra
 from lnbits.core.services import pay_invoice
 from loguru import logger
 
-from . import withdraw_ext
 from .crud import (
     create_hash_check,
     delete_hash_check,
@@ -21,9 +20,11 @@ from .crud import (
 )
 from .models import WithdrawLink
 
+withdraw_ext_lnurl = APIRouter(prefix="/api/v1/lnurl")
 
-@withdraw_ext.get(
-    "/api/v1/lnurl/{unique_hash}",
+
+@withdraw_ext_lnurl.get(
+    "/{unique_hash}",
     response_class=JSONResponse,
     name="withdraw.api_lnurl_response",
 )
@@ -61,8 +62,8 @@ async def api_lnurl_response(request: Request, unique_hash: str):
     }
 
 
-@withdraw_ext.get(
-    "/api/v1/lnurl/cb/{unique_hash}",
+@withdraw_ext_lnurl.get(
+    "/cb/{unique_hash}",
     name="withdraw.api_lnurl_callback",
     summary="lnurl withdraw callback",
     description="""
@@ -194,8 +195,8 @@ async def dispatch_webhook(
 
 
 # FOR LNURLs WHICH ARE UNIQUE
-@withdraw_ext.get(
-    "/api/v1/lnurl/{unique_hash}/{id_unique_hash}",
+@withdraw_ext_lnurl.get(
+    "/{unique_hash}/{id_unique_hash}",
     response_class=JSONResponse,
     name="withdraw.api_lnurl_multi_response",
 )

@@ -2,13 +2,12 @@ import json
 from http import HTTPStatus
 from typing import Optional
 
-from fastapi import Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from lnbits.core.crud import get_user
 from lnbits.decorators import WalletTypeInfo, get_key_type, require_admin_key
 
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 
-from . import withdraw_ext
 from .crud import (
     create_withdraw_link,
     delete_withdraw_link,
@@ -19,8 +18,10 @@ from .crud import (
 )
 from .models import CreateWithdrawData
 
+withdraw_ext_api = APIRouter(prefix="/api/v1")
 
-@withdraw_ext.get("/api/v1/links", status_code=HTTPStatus.OK)
+
+@withdraw_ext_api.get("/links", status_code=HTTPStatus.OK)
 async def api_links(
     req: Request,
     wallet: WalletTypeInfo = Depends(get_key_type),
@@ -48,7 +49,7 @@ async def api_links(
         ) from exc
 
 
-@withdraw_ext.get("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
+@withdraw_ext_api.get("/links/{link_id}", status_code=HTTPStatus.OK)
 async def api_link_retrieve(
     link_id: str, request: Request, wallet: WalletTypeInfo = Depends(get_key_type)
 ):
@@ -66,8 +67,8 @@ async def api_link_retrieve(
     return {**link.dict(), **{"lnurl": link.lnurl(request)}}
 
 
-@withdraw_ext.post("/api/v1/links", status_code=HTTPStatus.CREATED)
-@withdraw_ext.put("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
+@withdraw_ext_api.post("/links", status_code=HTTPStatus.CREATED)
+@withdraw_ext_api.put("/links/{link_id}", status_code=HTTPStatus.OK)
 async def api_link_create_or_update(
     req: Request,
     data: CreateWithdrawData,
@@ -150,7 +151,7 @@ async def api_link_create_or_update(
     return {**link.dict(), **{"lnurl": link.lnurl(req)}}
 
 
-@withdraw_ext.delete("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
+@withdraw_ext_api.delete("/links/{link_id}", status_code=HTTPStatus.OK)
 async def api_link_delete(link_id, wallet: WalletTypeInfo = Depends(require_admin_key)):
     link = await get_withdraw_link(link_id)
 
@@ -168,8 +169,8 @@ async def api_link_delete(link_id, wallet: WalletTypeInfo = Depends(require_admi
     return {"success": True}
 
 
-@withdraw_ext.get(
-    "/api/v1/links/{the_hash}/{lnurl_id}",
+@withdraw_ext_api.get(
+    "/links/{the_hash}/{lnurl_id}",
     status_code=HTTPStatus.OK,
     dependencies=[Depends(get_key_type)],
 )
