@@ -135,7 +135,8 @@ async def api_lnurl_callback(
         )
         await increment_withdraw_link(link)
         # If the payment succeeds, delete the record with the unique_hash.
-        # If it has unique_hash, do not delete to prevent the same LNURL from being processed twice.
+        # TODO: we delete this now: "If it has unique_hash, do not delete to prevent
+        # the same LNURL from being processed twice."
         await delete_hash_check(id_unique_hash or unique_hash)
 
         if link.webhook_url:
