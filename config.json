@@ -5,8 +5,8 @@
   "min_lnbits_version": "0.12.5",
   "contributors": [
     {
-      "name": "Ben Arc",
-      "uri": "mailto:ben@lnbits.com",
+      "name": "arcbtc",
+      "uri": "https://github.com/arcbtc",
       "role": "Developer"
     },
     {
@@ -22,6 +22,36 @@
     {
       "name": "dni",
       "uri": "https://github.com/dni",
+      "role": "Developer"
+    },
+    {
+      "name": "motorina0",
+      "uri": "https://github.com/motorina0",
+      "role": "Developer"
+    },
+    {
+      "name": "prusnak",
+      "uri": "https://github.com/prusnak",
+      "role": "Developer"
+    },
+    {
+      "name": "callebtc",
+      "uri": "https://github.com/callebtc",
+      "role": "Developer"
+    },
+    {
+      "name": "Liongrass",
+      "uri": "https://github.com/Liongrass",
+      "role": "Developer"
+    },
+    {
+      "name": "supiiik",
+      "uri": "https://github.com/supiiik",
+      "role": "Developer"
+    },
+    {
+      "name": "Jakub-Dv",
+      "uri": "https://github.com/Jakub-Dv",
       "role": "Developer"
     }
   ],
