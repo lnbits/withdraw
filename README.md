@@ -1,4 +1,5 @@
 # LNURLw - <small>[LNbits](https://github.com/lnbits/lnbits) extension</small>
+
 <small>For more about LNBits extension check [this tutorial](https://github.com/lnbits/lnbits/wiki/LNbits-Extensions)</small>
 
 ## Create a static QR code people can use to withdraw funds from a Lightning Network wallet

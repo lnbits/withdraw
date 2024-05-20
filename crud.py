@@ -2,11 +2,12 @@ from datetime import datetime
 from typing import List, Optional, Union
 
 import shortuuid
-
+from lnbits.db import Database
 from lnbits.helpers import urlsafe_short_hash
 
-from . import db
 from .models import CreateWithdrawData, HashCheck, WithdrawLink
+
+db = Database("ext_withdraw")
 
 
 async def create_withdraw_link(
@@ -92,7 +93,11 @@ async def get_withdraw_links(wallet_ids: Union[str, List[str]]) -> List[Withdraw
 
     q = ",".join(["?"] * len(wallet_ids))
     rows = await db.fetchall(
-        f"SELECT * FROM withdraw.withdraw_link WHERE wallet IN ({q}) ORDER BY open_time DESC", (*wallet_ids,)
+        f"""
+        SELECT * FROM withdraw.withdraw_link
+        WHERE wallet IN ({q}) ORDER BY open_time DESC
+        """,
+        (*wallet_ids,),
     )
     return [WithdrawLink(**row) for row in rows]
 
@@ -115,6 +120,7 @@ async def increment_withdraw_link(link: WithdrawLink) -> None:
         used=link.used + 1,
         open_time=link.wait_time + int(datetime.now().timestamp()),
     )
+
 
 async def update_withdraw_link(link_id: str, **kwargs) -> Optional[WithdrawLink]:
     if "is_unique" in kwargs:
@@ -150,8 +156,8 @@ async def create_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
         """,
         (the_hash, lnurl_id),
     )
-    hashCheck = await get_hash_check(the_hash, lnurl_id)
-    return hashCheck
+    hash_check = await get_hash_check(the_hash, lnurl_id)
+    return hash_check
 
 
 async def get_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
@@ -170,6 +176,7 @@ async def get_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
             return HashCheck(lnurl=True, hash=False)
         else:
             return HashCheck(lnurl=True, hash=True)
+
 
 async def delete_hash_check(the_hash: str) -> None:
     await db.execute("DELETE FROM withdraw.hash_check WHERE id = ?", (the_hash,))

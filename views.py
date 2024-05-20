@@ -2,27 +2,29 @@ from http import HTTPStatus
 from io import BytesIO
 
 import pyqrcode
-from fastapi import Depends, HTTPException, Request
-from fastapi.templating import Jinja2Templates
-from starlette.responses import HTMLResponse, StreamingResponse
-
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse, StreamingResponse
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
+from lnbits.helpers import template_renderer
 
-from . import withdraw_ext, withdraw_renderer
 from .crud import chunks, get_withdraw_link
 
-templates = Jinja2Templates(directory="templates")
+withdraw_ext_generic = APIRouter()
 
 
-@withdraw_ext.get("/", response_class=HTMLResponse)
+def withdraw_renderer():
+    return template_renderer(["withdraw/templates"])
+
+
+@withdraw_ext_generic.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User = Depends(check_user_exists)):
     return withdraw_renderer().TemplateResponse(
         "withdraw/index.html", {"request": request, "user": user.dict()}
     )
 
 
-@withdraw_ext.get("/{link_id}", response_class=HTMLResponse)
+@withdraw_ext_generic.get("/{link_id}", response_class=HTMLResponse)
 async def display(request: Request, link_id):
     link = await get_withdraw_link(link_id, 0)
 
@@ -41,7 +43,7 @@ async def display(request: Request, link_id):
     )
 
 
-@withdraw_ext.get("/img/{link_id}", response_class=StreamingResponse)
+@withdraw_ext_generic.get("/img/{link_id}", response_class=StreamingResponse)
 async def img(request: Request, link_id):
     link = await get_withdraw_link(link_id, 0)
     if not link:
@@ -67,7 +69,7 @@ async def img(request: Request, link_id):
     )
 
 
-@withdraw_ext.get("/print/{link_id}", response_class=HTMLResponse)
+@withdraw_ext_generic.get("/print/{link_id}", response_class=HTMLResponse)
 async def print_qr(request: Request, link_id):
     link = await get_withdraw_link(link_id)
     if not link:
@@ -86,7 +88,7 @@ async def print_qr(request: Request, link_id):
     links = []
     count = 0
 
-    for x in link.usescsv.split(","):
+    for _ in link.usescsv.split(","):
         linkk = await get_withdraw_link(link_id, count)
         if not linkk:
             raise HTTPException(
@@ -114,7 +116,7 @@ async def print_qr(request: Request, link_id):
     )
 
 
-@withdraw_ext.get("/csv/{link_id}", response_class=HTMLResponse)
+@withdraw_ext_generic.get("/csv/{link_id}", response_class=HTMLResponse)
 async def csv(request: Request, link_id):
     link = await get_withdraw_link(link_id)
     if not link:
@@ -133,7 +135,7 @@ async def csv(request: Request, link_id):
     links = []
     count = 0
 
-    for x in link.usescsv.split(","):
+    for _ in link.usescsv.split(","):
         linkk = await get_withdraw_link(link_id, count)
         if not linkk:
             raise HTTPException(
