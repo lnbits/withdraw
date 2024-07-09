@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from loguru import logger
 
+from .crud import db
 from .views import withdraw_ext_generic
 from .views_api import withdraw_ext_api
 from .views_lnurl import withdraw_ext_lnurl
@@ -43,3 +44,6 @@ withdraw_ext.route_class = LNURLErrorResponseHandler
 withdraw_ext.include_router(withdraw_ext_generic)
 withdraw_ext.include_router(withdraw_ext_api)
 withdraw_ext.include_router(withdraw_ext_lnurl)
+
+
+__all__ = ["withdraw_ext", "withdraw_static_files", "db"]
