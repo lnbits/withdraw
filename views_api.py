@@ -25,6 +25,8 @@ async def api_links(
     req: Request,
     wallet: WalletTypeInfo = Depends(get_key_type),
     all_wallets: bool = Query(False),
+    offset: int = Query(0),
+    limit: int = Query(0),
 ):
     wallet_ids = [wallet.wallet.id]
 
@@ -33,10 +35,12 @@ async def api_links(
         wallet_ids = user.wallet_ids if user else []
 
     try:
-        return [
-            {**link.dict(), **{"lnurl": link.lnurl(req)}}
-            for link in await get_withdraw_links(wallet_ids)
-        ]
+        links, total = await get_withdraw_links(wallet_ids, limit, offset)
+        return {
+            "data": [{**link.dict(), **{"lnurl": link.lnurl(req)}} for link in links],
+            "total": total,
+        }
+
 
     except LnurlInvalidUrl:
         raise HTTPException(

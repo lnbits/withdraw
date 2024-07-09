@@ -59,7 +59,9 @@ new Vue({
           {name: 'max', align: 'right', label: 'Max (sat)', field: 'max_fsat'}
         ],
         pagination: {
-          rowsPerPage: 10
+          page: 1,
+          rowsPerPage: 10,
+          rowsNumber: 0
         }
       },
       nfcTagWriting: false,
@@ -97,24 +99,30 @@ new Vue({
     }
   },
   methods: {
-    getWithdrawLinks: function () {
-      var self = this
+    getWithdrawLinks: function (props) {
+      if (props) {
+        this.withdrawLinksTable.pagination = props.pagination;
+      }
 
+      let pagination = this.withdrawLinksTable.pagination;
+      const query = {
+        limit: pagination.rowsPerPage,
+        offset: (pagination.page - 1) * pagination.rowsPerPage
+      };
+
+      var self = this;
       LNbits.api
-        .request(
-          'GET',
-          '/withdraw/api/v1/links?all_wallets=true',
-          this.g.user.wallets[0].inkey
-        )
+        .request('GET', `/withdraw/api/v1/links?all_wallets=true&limit=${query.limit}&offset=${query.offset}`, this.g.user.wallets[0].inkey)
         .then(function (response) {
-          self.withdrawLinks = response.data.map(function (obj) {
-            return mapWithdrawLink(obj)
-          })
+          self.withdrawLinks = response.data.data.map(function (obj) {
+            return mapWithdrawLink(obj);
+          });
+          self.withdrawLinksTable.pagination.rowsNumber = response.data.total;
         })
         .catch(function (error) {
-          clearInterval(self.checker)
-          LNbits.utils.notifyApiError(error)
-        })
+          clearInterval(self.checker);
+          LNbits.utils.notifyApiError(error);
+        });
     },
     closeFormDialog: function () {
       this.formDialog.data = {
@@ -309,11 +317,8 @@ new Vue({
   },
   created: function () {
     if (this.g.user.wallets.length) {
-      var getWithdrawLinks = this.getWithdrawLinks
-      getWithdrawLinks()
-      this.checker = setInterval(function () {
-        getWithdrawLinks()
-      }, 300000)
+      this.getWithdrawLinks();
+      this.checker = setInterval(this.getWithdrawLinks, 300000);
     }
   }
 })

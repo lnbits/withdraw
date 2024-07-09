@@ -86,15 +86,26 @@ async def get_withdraw_link_by_hash(unique_hash: str, num=0) -> Optional[Withdra
     return WithdrawLink.parse_obj(link)
 
 
-async def get_withdraw_links(wallet_ids: Union[str, List[str]]) -> List[WithdrawLink]:
-    if isinstance(wallet_ids, str):
-        wallet_ids = [wallet_ids]
-
-    q = ",".join(["?"] * len(wallet_ids))
+async def get_withdraw_links(wallet_ids: List[str], limit: int, offset: int) -> (List[WithdrawLink], int):
     rows = await db.fetchall(
-        f"SELECT * FROM withdraw.withdraw_link WHERE wallet IN ({q}) ORDER BY open_time DESC", (*wallet_ids,)
+        """
+        SELECT * FROM withdraw.withdraw_link
+        WHERE wallet IN ({})
+        ORDER BY open_time DESC
+        LIMIT ? OFFSET ?
+        """.format(','.join('?' * len(wallet_ids))),
+        (*wallet_ids, limit, offset)
     )
-    return [WithdrawLink(**row) for row in rows]
+    
+    total = await db.fetchone(
+        """
+        SELECT COUNT(*) as total FROM withdraw.withdraw_link
+        WHERE wallet IN ({})
+        """.format(','.join('?' * len(wallet_ids))),
+        (*wallet_ids,)
+    )
+    
+    return [WithdrawLink(**row) for row in rows], total['total']
 
 
 async def remove_unique_withdraw_link(link: WithdrawLink, unique_hash: str) -> None:
