@@ -1,12 +1,14 @@
 import json
 from datetime import datetime
 from http import HTTPStatus
+from typing import Callable
 from urllib.parse import urlparse
 
 import httpx
 import shortuuid
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
 from lnbits.core.crud import update_payment_extra
 from lnbits.core.services import pay_invoice
 from loguru import logger
@@ -20,7 +22,30 @@ from .crud import (
 )
 from .models import WithdrawLink
 
+
+class LNURLErrorResponseHandler(APIRoute):
+    def get_route_handler(self) -> Callable:
+        original_route_handler = super().get_route_handler()
+
+        async def custom_route_handler(request: Request) -> Response:
+            try:
+                response = await original_route_handler(request)
+            except HTTPException as exc:
+                logger.debug(f"HTTPException: {exc}")
+                response = JSONResponse(
+                    status_code=exc.status_code,
+                    content={"status": "ERROR", "reason": f"{exc.detail}"},
+                )
+            except Exception as exc:
+                raise exc
+
+            return response
+
+        return custom_route_handler
+
+
 withdraw_ext_lnurl = APIRouter(prefix="/api/v1/lnurl")
+withdraw_ext_lnurl.route_class = LNURLErrorResponseHandler
 
 
 @withdraw_ext_lnurl.get(
