@@ -108,7 +108,6 @@ async def api_lnurl_callback(
             detail=f"wait link open_time {link.open_time - now} seconds.",
         )
 
-
     if id_unique_hash:
         if check_unique_link(link, id_unique_hash):
             await remove_unique_withdraw_link(link, id_unique_hash)
