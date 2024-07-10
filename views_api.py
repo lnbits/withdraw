@@ -126,7 +126,13 @@ async def api_link_create_or_update(
 
         if link.uses < data.uses:
             numbers = link.usescsv.split(",")
-            current_number = int(numbers[-1])
+            
+            if numbers[-1] == "":
+                current_number = int(link.uses)
+                numbers[-1] = str(link.uses)
+            else:
+                current_number = int(numbers[-1])
+                
             while len(numbers) < (data.uses - link.used):
                 current_number += 1
                 numbers.append(str(current_number))
