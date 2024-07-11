@@ -1,30 +1,55 @@
 import json
 from datetime import datetime
 from http import HTTPStatus
+from typing import Callable
 from urllib.parse import urlparse
 
 import httpx
 import shortuuid
-from fastapi import HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
-from loguru import logger
-
+from fastapi.routing import APIRoute
 from lnbits.core.crud import update_payment_extra
 from lnbits.core.services import pay_invoice
+from loguru import logger
 
-from . import withdraw_ext
 from .crud import (
+    create_hash_check,
+    delete_hash_check,
     get_withdraw_link_by_hash,
     increment_withdraw_link,
     remove_unique_withdraw_link,
-    delete_hash_check,
-    create_hash_check
 )
 from .models import WithdrawLink
 
 
-@withdraw_ext.get(
-    "/api/v1/lnurl/{unique_hash}",
+class LNURLErrorResponseHandler(APIRoute):
+    def get_route_handler(self) -> Callable:
+        original_route_handler = super().get_route_handler()
+
+        async def custom_route_handler(request: Request) -> Response:
+            try:
+                response = await original_route_handler(request)
+            except HTTPException as exc:
+                logger.debug(f"HTTPException: {exc}")
+                response = JSONResponse(
+                    status_code=exc.status_code,
+                    content={"status": "ERROR", "reason": f"{exc.detail}"},
+                )
+            except Exception as exc:
+                raise exc
+
+            return response
+
+        return custom_route_handler
+
+
+withdraw_ext_lnurl = APIRouter(prefix="/api/v1/lnurl")
+withdraw_ext_lnurl.route_class = LNURLErrorResponseHandler
+
+
+@withdraw_ext_lnurl.get(
+    "/{unique_hash}",
     response_class=JSONResponse,
     name="withdraw.api_lnurl_response",
 )
@@ -40,7 +65,9 @@ async def api_lnurl_response(request: Request, unique_hash: str):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw is spent."
         )
-    url = str(request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash))
+    url = str(
+        request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
+    )
 
     # Check if url is .onion and change to http
     if urlparse(url).netloc.endswith(".onion"):
@@ -60,8 +87,8 @@ async def api_lnurl_response(request: Request, unique_hash: str):
     }
 
 
-@withdraw_ext.get(
-    "/api/v1/lnurl/cb/{unique_hash}",
+@withdraw_ext_lnurl.get(
+    "/cb/{unique_hash}",
     name="withdraw.api_lnurl_callback",
     summary="lnurl withdraw callback",
     description="""
@@ -106,7 +133,6 @@ async def api_lnurl_callback(
             detail=f"wait link open_time {link.open_time - now} seconds.",
         )
 
-
     if id_unique_hash:
         if check_unique_link(link, id_unique_hash):
             await remove_unique_withdraw_link(link, id_unique_hash)
@@ -133,7 +159,8 @@ async def api_lnurl_callback(
         )
         await increment_withdraw_link(link)
         # If the payment succeeds, delete the record with the unique_hash.
-        # If it has unique_hash, do not delete to prevent the same LNURL from being processed twice.
+        # TODO: we delete this now: "If it has unique_hash, do not delete to prevent
+        # the same LNURL from being processed twice."
         await delete_hash_check(id_unique_hash or unique_hash)
 
         if link.webhook_url:
@@ -143,7 +170,7 @@ async def api_lnurl_callback(
         # If payment fails, delete the hash stored so another attempt can be made.
         await delete_hash_check(id_unique_hash or unique_hash)
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {str(exc)}"
+            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {exc!s}"
         ) from exc
 
 
@@ -167,9 +194,9 @@ async def dispatch_webhook(
                     "lnurlw": link.id,
                     "body": json.loads(link.webhook_body) if link.webhook_body else "",
                 },
-                headers=json.loads(link.webhook_headers)
-                if link.webhook_headers
-                else None,
+                headers=(
+                    json.loads(link.webhook_headers) if link.webhook_headers else None
+                ),
                 timeout=40,
             )
             await update_payment_extra(
@@ -182,8 +209,9 @@ async def dispatch_webhook(
                 outgoing=True,
             )
         except Exception as exc:
-            # webhook fails shouldn't cause the lnurlw to fail since invoice is already paid
-            logger.error(f"Caught exception when dispatching webhook url: {str(exc)}")
+            # webhook fails shouldn't cause the lnurlw to fail
+            # since invoice is already paid
+            logger.error(f"Caught exception when dispatching webhook url: {exc!s}")
             await update_payment_extra(
                 payment_hash=payment_hash,
                 extra={"wh_success": False, "wh_message": str(exc)},
@@ -192,12 +220,14 @@ async def dispatch_webhook(
 
 
 # FOR LNURLs WHICH ARE UNIQUE
-@withdraw_ext.get(
-    "/api/v1/lnurl/{unique_hash}/{id_unique_hash}",
+@withdraw_ext_lnurl.get(
+    "/{unique_hash}/{id_unique_hash}",
     response_class=JSONResponse,
     name="withdraw.api_lnurl_multi_response",
 )
-async def api_lnurl_multi_response(request: Request, unique_hash: str, id_unique_hash: str):
+async def api_lnurl_multi_response(
+    request: Request, unique_hash: str, id_unique_hash: str
+):
     link = await get_withdraw_link_by_hash(unique_hash)
 
     if not link:
@@ -215,7 +245,9 @@ async def api_lnurl_multi_response(request: Request, unique_hash: str, id_unique
             status_code=HTTPStatus.NOT_FOUND, detail="LNURL-withdraw not found."
         )
 
-    url = str(request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash))
+    url = str(
+        request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
+    )
 
     # Check if url is .onion and change to http
     if urlparse(url).netloc.endswith(".onion"):

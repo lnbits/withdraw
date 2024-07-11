@@ -1,14 +1,12 @@
+import json
 from http import HTTPStatus
 from typing import Optional
-import json
 
-from fastapi import Depends, HTTPException, Query, Request
-from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
-
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from lnbits.core.crud import get_user
 from lnbits.decorators import WalletTypeInfo, get_key_type, require_admin_key
+from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 
-from . import withdraw_ext
 from .crud import (
     create_withdraw_link,
     delete_withdraw_link,
@@ -19,8 +17,10 @@ from .crud import (
 )
 from .models import CreateWithdrawData
 
+withdraw_ext_api = APIRouter(prefix="/api/v1")
 
-@withdraw_ext.get("/api/v1/links", status_code=HTTPStatus.OK)
+
+@withdraw_ext_api.get("/links", status_code=HTTPStatus.OK)
 async def api_links(
     req: Request,
     wallet: WalletTypeInfo = Depends(get_key_type),
@@ -38,14 +38,17 @@ async def api_links(
             for link in await get_withdraw_links(wallet_ids)
         ]
 
-    except LnurlInvalidUrl:
+    except LnurlInvalidUrl as exc:
         raise HTTPException(
             status_code=HTTPStatus.UPGRADE_REQUIRED,
-            detail="LNURLs need to be delivered over a publically accessible `https` domain or Tor.",
-        )
+            detail="""
+                LNURLs need to be delivered over a publically
+                accessible `https` domain or Tor.
+            """,
+        ) from exc
 
 
-@withdraw_ext.get("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
+@withdraw_ext_api.get("/links/{link_id}", status_code=HTTPStatus.OK)
 async def api_link_retrieve(
     link_id: str, request: Request, wallet: WalletTypeInfo = Depends(get_key_type)
 ):
@@ -63,8 +66,8 @@ async def api_link_retrieve(
     return {**link.dict(), **{"lnurl": link.lnurl(request)}}
 
 
-@withdraw_ext.post("/api/v1/links", status_code=HTTPStatus.CREATED)
-@withdraw_ext.put("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
+@withdraw_ext_api.post("/links", status_code=HTTPStatus.CREATED)
+@withdraw_ext_api.put("/links/{link_id}", status_code=HTTPStatus.OK)
 async def api_link_create_or_update(
     req: Request,
     data: CreateWithdrawData,
@@ -88,20 +91,20 @@ async def api_link_create_or_update(
     if data.webhook_body:
         try:
             json.loads(data.webhook_body)
-        except:
+        except Exception as exc:
             raise HTTPException(
                 detail="`webhook_body` can not parse JSON.",
                 status_code=HTTPStatus.BAD_REQUEST,
-            )
+            ) from exc
 
     if data.webhook_headers:
         try:
             json.loads(data.webhook_headers)
-        except:
+        except Exception as exc:
             raise HTTPException(
                 detail="`webhook_headers` can not parse JSON.",
                 status_code=HTTPStatus.BAD_REQUEST,
-            )
+            ) from exc
 
     if link_id:
         link = await get_withdraw_link(link_id, 0)
@@ -113,32 +116,33 @@ async def api_link_create_or_update(
             raise HTTPException(
                 detail="Not your withdraw link.", status_code=HTTPStatus.FORBIDDEN
             )
-        
-        data_dict = data.dict() 
+
+        data_dict = data.dict()
         if link.uses > data.uses:
             if data.uses - link.used <= 0:
                 raise HTTPException(
-                    detail="Cannot reduce uses below current used.", status_code=HTTPStatus.BAD_REQUEST
+                    detail="Cannot reduce uses below current used.",
+                    status_code=HTTPStatus.BAD_REQUEST,
                 )
             numbers = link.usescsv.split(",")
-            usescsv = ",".join(numbers[:data.uses - link.used])
+            usescsv = ",".join(numbers[: data.uses - link.used])
             data_dict["usescsv"] = usescsv
 
         if link.uses < data.uses:
             numbers = link.usescsv.split(",")
-            
+
             if numbers[-1] == "":
                 current_number = int(link.uses)
                 numbers[-1] = str(link.uses)
             else:
                 current_number = int(numbers[-1])
-                
+
             while len(numbers) < (data.uses - link.used):
                 current_number += 1
                 numbers.append(str(current_number))
             usescsv = ",".join(numbers)
             data_dict["usescsv"] = usescsv
-                        
+
         link = await update_withdraw_link(link_id, **data_dict)
     else:
         link = await create_withdraw_link(wallet_id=wallet.wallet.id, data=data)
@@ -146,7 +150,7 @@ async def api_link_create_or_update(
     return {**link.dict(), **{"lnurl": link.lnurl(req)}}
 
 
-@withdraw_ext.delete("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
+@withdraw_ext_api.delete("/links/{link_id}", status_code=HTTPStatus.OK)
 async def api_link_delete(link_id, wallet: WalletTypeInfo = Depends(require_admin_key)):
     link = await get_withdraw_link(link_id)
 
@@ -164,11 +168,11 @@ async def api_link_delete(link_id, wallet: WalletTypeInfo = Depends(require_admi
     return {"success": True}
 
 
-@withdraw_ext.get(
-    "/api/v1/links/{the_hash}/{lnurl_id}",
+@withdraw_ext_api.get(
+    "/links/{the_hash}/{lnurl_id}",
     status_code=HTTPStatus.OK,
     dependencies=[Depends(get_key_type)],
 )
 async def api_hash_retrieve(the_hash, lnurl_id):
-    hashCheck = await get_hash_check(the_hash, lnurl_id)
-    return hashCheck
+    hash_check = await get_hash_check(the_hash, lnurl_id)
+    return hash_check

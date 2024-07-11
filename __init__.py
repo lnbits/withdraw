@@ -1,13 +1,9 @@
-from fastapi import APIRouter, Request, Response
-from fastapi.routing import APIRoute
+from fastapi import APIRouter
 
-from fastapi.responses import JSONResponse
-
-from lnbits.db import Database
-from lnbits.helpers import template_renderer
-from typing import Callable
-
-db = Database("ext_withdraw")
+from .crud import db
+from .views import withdraw_ext_generic
+from .views_api import withdraw_ext_api
+from .views_lnurl import withdraw_ext_lnurl
 
 withdraw_static_files = [
     {
@@ -16,36 +12,9 @@ withdraw_static_files = [
     }
 ]
 
-
-class LNURLErrorResponseHandler(APIRoute):
-    def get_route_handler(self) -> Callable:
-        original_route_handler = super().get_route_handler()
-
-        async def custom_route_handler(request: Request) -> Response:
-            try:
-                response = await original_route_handler(request)
-            except HTTPException as exc:
-                logger.debug(f"HTTPException: {exc}")
-                response = JSONResponse(
-                    status_code=exc.status_code,
-                    content={"status": "ERROR", "reason": f"{exc.detail}"},
-                )
-            except Exception as exc:
-                raise exc
-
-            return response
-
-        return custom_route_handler
-
-
 withdraw_ext: APIRouter = APIRouter(prefix="/withdraw", tags=["withdraw"])
-withdraw_ext.route_class = LNURLErrorResponseHandler
+withdraw_ext.include_router(withdraw_ext_generic)
+withdraw_ext.include_router(withdraw_ext_api)
+withdraw_ext.include_router(withdraw_ext_lnurl)
 
-
-def withdraw_renderer():
-    return template_renderer(["withdraw/templates"])
-
-
-from .lnurl import *  # noqa: F401,F403
-from .views import *  # noqa: F401,F403
-from .views_api import *  # noqa: F401,F403
+__all__ = ["withdraw_ext", "withdraw_static_files", "db"]
