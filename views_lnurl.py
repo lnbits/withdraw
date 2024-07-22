@@ -1,12 +1,12 @@
 import json
 from datetime import datetime
 from http import HTTPStatus
-from typing import Callable
+from typing import Callable, Optional
 from urllib.parse import urlparse
 
 import httpx
 import shortuuid
-from fastapi import APIRouter, HTTPException, Query, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from lnbits.core.crud import update_payment_extra
@@ -30,16 +30,14 @@ class LNURLErrorResponseHandler(APIRoute):
         async def custom_route_handler(request: Request) -> Response:
             try:
                 response = await original_route_handler(request)
+                return response
             except HTTPException as exc:
                 logger.debug(f"HTTPException: {exc}")
                 response = JSONResponse(
-                    status_code=exc.status_code,
+                    status_code=200,
                     content={"status": "ERROR", "reason": f"{exc.detail}"},
                 )
-            except Exception as exc:
-                raise exc
-
-            return response
+                return response
 
         return custom_route_handler
 
@@ -65,6 +63,13 @@ async def api_lnurl_response(request: Request, unique_hash: str):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw is spent."
         )
+
+    if link.is_unique:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="This link requires an id_unique_hash.",
+        )
+
     url = str(
         request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
     )
@@ -105,10 +110,10 @@ async def api_lnurl_response(request: Request, unique_hash: str):
     },
 )
 async def api_lnurl_callback(
-    unique_hash,
-    k1: str = Query(...),
-    pr: str = Query(...),
-    id_unique_hash=None,
+    unique_hash: str,
+    k1: str,
+    pr: str,
+    id_unique_hash: Optional[str] = None,
 ):
 
     link = await get_withdraw_link_by_hash(unique_hash)
@@ -131,6 +136,12 @@ async def api_lnurl_callback(
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
             detail=f"wait link open_time {link.open_time - now} seconds.",
+        )
+
+    if not id_unique_hash and link.is_unique:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="id_unique_hash is required for this link.",
         )
 
     if id_unique_hash:
