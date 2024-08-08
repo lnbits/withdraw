@@ -6,7 +6,6 @@ from fastapi import Query, Request
 # TODO remove type: ignore when 0.12.11 is released
 from lnurl import (  # type: ignore
     ClearnetUrl,  # type: ignore
-    Lnurl,
     LnurlWithdrawResponse,
     MilliSatoshi,  # type: ignore
 )
@@ -42,7 +41,6 @@ class WithdrawLink(BaseModel):
     open_time: int = Query(0)
     used: int = Query(0)
     usescsv: str = Query(None)
-    number: int = Query(0)
     webhook_url: str = Query(None)
     webhook_headers: str = Query(None)
     webhook_body: str = Query(None)
@@ -52,10 +50,10 @@ class WithdrawLink(BaseModel):
     def is_spent(self) -> bool:
         return self.used >= self.uses
 
-    def lnurl(self, req: Request) -> Lnurl:
+    def lnurl(self, req: Request, num: int = 0) -> str:
         if self.is_unique:
             usescssv = self.usescsv.split(",")
-            tohash = self.id + self.unique_hash + usescssv[self.number]
+            tohash = self.id + self.unique_hash + usescssv[num]
             multihash = shortuuid.uuid(name=tohash)
             url = str(
                 req.url_for(
@@ -69,7 +67,7 @@ class WithdrawLink(BaseModel):
                 req.url_for("withdraw.api_lnurl_response", unique_hash=self.unique_hash)
             )
 
-        return lnurl_encode(url)
+        return str(lnurl_encode(url))
 
     def lnurl_response(self, req: Request) -> LnurlWithdrawResponse:
         url = req.url_for("withdraw.api_lnurl_callback", unique_hash=self.unique_hash)

@@ -55,7 +55,7 @@ async def api_links(
 async def api_link_retrieve(
     link_id: str, request: Request, wallet: WalletTypeInfo = Depends(get_key_type)
 ):
-    link = await get_withdraw_link(link_id, 0)
+    link = await get_withdraw_link(link_id)
 
     if not link:
         raise HTTPException(
@@ -110,7 +110,7 @@ async def api_link_create_or_update(
             ) from exc
 
     if link_id:
-        link = await get_withdraw_link(link_id, 0)
+        link = await get_withdraw_link(link_id)
         if not link:
             raise HTTPException(
                 detail="Withdraw link does not exist.", status_code=HTTPStatus.NOT_FOUND

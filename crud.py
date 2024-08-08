@@ -60,35 +60,23 @@ async def create_withdraw_link(
             int(time()),
         ),
     )
-    link = await get_withdraw_link(link_id, 0)
+    link = await get_withdraw_link(link_id)
     assert link, "Newly created link couldn't be retrieved"
     return link
 
 
-async def get_withdraw_link(link_id: str, num=0) -> Optional[WithdrawLink]:
+async def get_withdraw_link(link_id: str) -> Optional[WithdrawLink]:
     row = await db.fetchone(
         "SELECT * FROM withdraw.withdraw_link WHERE id = ?", (link_id,)
     )
-    if not row:
-        return None
-
-    link = dict(**row)
-    link["number"] = num
-
-    return WithdrawLink.parse_obj(link)
+    return WithdrawLink(**row) if row else None
 
 
-async def get_withdraw_link_by_hash(unique_hash: str, num=0) -> Optional[WithdrawLink]:
+async def get_withdraw_link_by_hash(unique_hash: str) -> Optional[WithdrawLink]:
     row = await db.fetchone(
         "SELECT * FROM withdraw.withdraw_link WHERE unique_hash = ?", (unique_hash,)
     )
-    if not row:
-        return None
-
-    link = dict(**row)
-    link["number"] = num
-
-    return WithdrawLink.parse_obj(link)
+    return WithdrawLink(**row) if row else None
 
 
 async def get_withdraw_links(
