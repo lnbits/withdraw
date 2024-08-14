@@ -1,4 +1,5 @@
 from datetime import datetime
+from time import time
 from typing import List, Optional, Tuple
 
 import shortuuid
@@ -33,9 +34,10 @@ async def create_withdraw_link(
             webhook_url,
             webhook_headers,
             webhook_body,
-            custom_url
+            custom_url,
+            created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             link_id,
@@ -54,6 +56,7 @@ async def create_withdraw_link(
             data.webhook_headers,
             data.webhook_body,
             data.custom_url,
+            int(time()),
         ),
     )
     link = await get_withdraw_link(link_id, 0)

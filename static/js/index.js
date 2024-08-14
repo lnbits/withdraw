@@ -11,10 +11,6 @@ var locationPath = [
 
 var mapWithdrawLink = function (obj) {
   obj._data = _.clone(obj)
-  obj.date = Quasar.utils.date.formatDate(
-    new Date(obj.time * 1000),
-    'YYYY-MM-DD HH:mm'
-  )
   obj.min_fsat = new Intl.NumberFormat(LOCALE).format(obj.min_withdrawable)
   obj.max_fsat = new Intl.NumberFormat(LOCALE).format(obj.max_withdrawable)
   obj.uses_left = obj.uses - obj.used
@@ -35,8 +31,17 @@ new Vue({
       withdrawLinks: [],
       withdrawLinksTable: {
         columns: [
-          {name: 'id', align: 'left', label: 'ID', field: 'id'},
           {name: 'title', align: 'left', label: 'Title', field: 'title'},
+          {
+            name: 'created_at',
+            align: 'left',
+            label: 'Created At',
+            field: 'created_at',
+            sortable: true,
+            format: function (val, row) {
+              return new Date(val).toLocaleString()
+            }
+          },
           {
             name: 'wait_time',
             align: 'right',
@@ -118,13 +123,13 @@ new Vue({
           `/withdraw/api/v1/links?all_wallets=true&limit=${query.limit}&offset=${query.offset}`,
           this.g.user.wallets[0].inkey
         )
-        .then(function (response) {
-          self.withdrawLinks = response.data.data.map(function (obj) {
+        .then(response => {
+          this.withdrawLinks = response.data.data.map(function (obj) {
             return mapWithdrawLink(obj)
           })
-          self.withdrawLinksTable.pagination.rowsNumber = response.data.total
+          this.withdrawLinksTable.pagination.rowsNumber = response.data.total
         })
-        .catch(function (error) {
+        .catch(error => {
           clearInterval(self.checker)
           LNbits.utils.notifyApiError(error)
         })
@@ -210,8 +215,6 @@ new Vue({
       }
     },
     updateWithdrawLink: function (wallet, data) {
-      var self = this
-
       // Remove webhook info if toggle is set to false
       if (!data.has_webhook) {
         data.webhook_url = null
@@ -227,26 +230,24 @@ new Vue({
           data
         )
         .then(response => {
-          self.withdrawLinks = _.reject(self.withdrawLinks, function (obj) {
+          this.withdrawLinks = _.reject(this.withdrawLinks, function (obj) {
             return obj.id === data.id
           })
-          self.withdrawLinks.push(mapWithdrawLink(response.data))
-          self.formDialog.show = false
+          this.withdrawLinks.push(mapWithdrawLink(response.data))
+          this.formDialog.show = false
           this.closeFormDialog()
         })
-        .catch(function (error) {
+        .catch(error => {
           LNbits.utils.notifyApiError(error)
         })
     },
     createWithdrawLink: function (wallet, data) {
-      var self = this
-
       LNbits.api
         .request('POST', '/withdraw/api/v1/links', wallet.adminkey, data)
         .then(response => {
-          self.withdrawLinks.push(mapWithdrawLink(response.data))
-          self.formDialog.show = false
-          self.simpleformDialog.show = false
+          this.withdrawLinks.push(mapWithdrawLink(response.data))
+          this.formDialog.show = false
+          this.simpleformDialog.show = false
           this.closeFormDialog()
         })
         .catch(function (error) {

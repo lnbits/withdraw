@@ -38,10 +38,10 @@
           <template v-slot:header="props">
             <q-tr :props="props">
               <q-th auto-width></q-th>
+              <q-th auto-width></q-th>
               <q-th v-for="col in props.cols" :key="col.name" :props="props">
                 {{ col.label }}
               </q-th>
-              <q-th auto-width></q-th>
               <q-th auto-width></q-th>
             </q-tr>
           </template>
@@ -92,14 +92,6 @@
                   ><q-tooltip> view LNURL </q-tooltip></q-btn
                 >
               </q-td>
-              <q-td v-for="col in props.cols" :key="col.name" :props="props">
-                {{ col.value }}
-              </q-td>
-              <q-td>
-                <q-icon v-if="props.row.webhook_url" size="14px" name="http">
-                  <q-tooltip>Webhook to {{ props.row.webhook_url}}</q-tooltip>
-                </q-icon>
-              </q-td>
               <q-td auto-width>
                 <q-btn
                   flat
@@ -117,6 +109,14 @@
                   icon="cancel"
                   color="pink"
                 ></q-btn>
+              </q-td>
+              <q-td v-for="col in props.cols" :key="col.name" :props="props">
+                {{ col.value }}
+              </q-td>
+              <q-td>
+                <q-icon v-if="props.row.webhook_url" size="14px" name="http">
+                  <q-tooltip>Webhook to {{ props.row.webhook_url}}</q-tooltip>
+                </q-icon>
               </q-td>
             </q-tr>
           </template>

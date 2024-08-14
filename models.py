@@ -1,3 +1,5 @@
+import datetime
+
 import shortuuid
 from fastapi import Query, Request
 from lnurl import Lnurl, LnurlWithdrawResponse
@@ -21,6 +23,7 @@ class CreateWithdrawData(BaseModel):
 
 class WithdrawLink(BaseModel):
     id: str
+    created_at: datetime.datetime
     wallet: str = Query(None)
     title: str = Query(None)
     min_withdrawable: int = Query(0)
