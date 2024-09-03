@@ -2,9 +2,15 @@ import datetime
 
 import shortuuid
 from fastapi import Query, Request
-from lnurl import Lnurl, LnurlWithdrawResponse
+
+# TODO remove type: ignore when 0.12.11 is released
+from lnurl import (  # type: ignore
+    ClearnetUrl,  # type: ignore
+    Lnurl,
+    LnurlWithdrawResponse,
+    MilliSatoshi,  # type: ignore
+)
 from lnurl import encode as lnurl_encode
-from lnurl.models import ClearnetUrl, MilliSatoshi
 from pydantic import BaseModel
 
 
