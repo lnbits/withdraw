@@ -4,7 +4,7 @@ import shortuuid
 from fastapi import Query, Request
 from lnurl import Lnurl, LnurlWithdrawResponse
 from lnurl import encode as lnurl_encode
-from lnurl.models import ClearnetUrl, MilliSatoshi
+from lnurl.types import ClearnetUrl, MilliSatoshi
 from pydantic import BaseModel
 
 
