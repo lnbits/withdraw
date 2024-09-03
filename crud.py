@@ -17,7 +17,7 @@ async def create_withdraw_link(
     link_id = urlsafe_short_hash()[:22]
     available_links = ",".join([str(i) for i in range(data.uses)])
     await db.execute(
-        """
+        f"""
         INSERT INTO withdraw.withdraw_link (
             id,
             wallet,
@@ -37,7 +37,8 @@ async def create_withdraw_link(
             custom_url,
             created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, {db.timestamp_placeholder})
         """,
         (
             link_id,
