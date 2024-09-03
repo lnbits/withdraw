@@ -26,7 +26,7 @@ async def index(request: Request, user: User = Depends(check_user_exists)):
 
 @withdraw_ext_generic.get("/{link_id}", response_class=HTMLResponse)
 async def display(request: Request, link_id):
-    link = await get_withdraw_link(link_id, 0)
+    link = await get_withdraw_link(link_id)
 
     if not link:
         raise HTTPException(
@@ -45,7 +45,7 @@ async def display(request: Request, link_id):
 
 @withdraw_ext_generic.get("/img/{link_id}", response_class=StreamingResponse)
 async def img(request: Request, link_id):
-    link = await get_withdraw_link(link_id, 0)
+    link = await get_withdraw_link(link_id)
     if not link:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
@@ -76,26 +76,14 @@ async def print_qr(request: Request, link_id):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
         )
-        # response.status_code = HTTPStatus.NOT_FOUND
-        # return "Withdraw link does not exist."
 
     if link.uses == 0:
-
         return withdraw_renderer().TemplateResponse(
             "withdraw/print_qr.html",
             {"request": request, "link": link.dict(), "unique": False},
         )
-    links = []
-    count = 0
 
-    for _ in link.usescsv.split(","):
-        linkk = await get_withdraw_link(link_id, count)
-        if not linkk:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
-            )
-        links.append(str(linkk.lnurl(request)))
-        count = count + 1
+    links = [link.lnurl(request, num=i) for i in range(len(link.usescsv.split(",")))]
     page_link = list(chunks(links, 2))
     linked = list(chunks(page_link, 5))
 
@@ -123,26 +111,14 @@ async def csv(request: Request, link_id):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
         )
-        # response.status_code = HTTPStatus.NOT_FOUND
-        # return "Withdraw link does not exist."
 
-    if link.uses == 0:
-
+    if not link.is_unique:
         return withdraw_renderer().TemplateResponse(
             "withdraw/csv.html",
             {"request": request, "link": link.dict(), "unique": False},
         )
-    links = []
-    count = 0
 
-    for _ in link.usescsv.split(","):
-        linkk = await get_withdraw_link(link_id, count)
-        if not linkk:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
-            )
-        links.append(str(linkk.lnurl(request)))
-        count = count + 1
+    links = [link.lnurl(request, num=i) for i in range(len(link.usescsv.split(",")))]
     page_link = list(chunks(links, 2))
     linked = list(chunks(page_link, 5))
 
