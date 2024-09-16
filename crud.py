@@ -94,16 +94,21 @@ async def get_withdraw_link_by_hash(unique_hash: str, num=0) -> Optional[Withdra
 async def get_withdraw_links(
     wallet_ids: List[str], limit: int, offset: int
 ) -> Tuple[List[WithdrawLink], int]:
-    rows = await db.fetchall(
-        """
+    query_str = """
         SELECT * FROM withdraw.withdraw_link
         WHERE wallet IN ({})
         ORDER BY open_time DESC
-        LIMIT ? OFFSET ?
-        """.format(
+        """
+    if limit > 0:
+        query_str += " LIMIT ? OFFSET ?"
+        query_params = (*wallet_ids, limit, offset)
+    else:
+        query_params = (*wallet_ids,)
+    rows = await db.fetchall(
+        query_str.format(
             ",".join("?" * len(wallet_ids))
         ),
-        (*wallet_ids, limit, offset),
+        query_params
     )
 
     total = await db.fetchone(
