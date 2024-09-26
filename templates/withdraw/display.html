@@ -52,12 +52,10 @@
 </div>
 {% endblock %} {% block scripts %}
 <script>
-  Vue.component(VueQrcode.name, VueQrcode)
-
-  new Vue({
+  window.app = Vue.createApp({
     el: '#vue',
-    mixins: [windowMixin],
-    data: function () {
+    mixins: [window.windowMixin],
+    data() {
       return {
         here: location.protocol + '//' + location.host,
         nfcTagWriting: false

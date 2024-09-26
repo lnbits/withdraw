@@ -28,10 +28,10 @@
         <q-table
           dense
           flat
-          :data="sortedWithdrawLinks"
+          :rows="sortedWithdrawLinks"
           row-key="id"
           :columns="withdrawLinksTable.columns"
-          :pagination.sync="withdrawLinksTable.pagination"
+          v-model:pagination="withdrawLinksTable.pagination"
           @request="getWithdrawLinks"
         >
           {% raw %}

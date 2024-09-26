@@ -91,9 +91,7 @@
 </style>
 {% endblock %} {% block scripts %}
 <script>
-  Vue.component(VueQrcode.name, VueQrcode)
-
-  new Vue({
+  window.app = Vue.createApp({
     el: '#vue',
     data: function () {
       return {
