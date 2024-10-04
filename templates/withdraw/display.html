@@ -9,12 +9,12 @@
           {% endif %}
           <a class="text-secondary" href="lightning:{{ lnurl }}">
             <q-responsive :ratio="1" class="q-mx-md">
-              <qrcode
+              <lnbits-qrcode
                 :value="this.here + '/?lightning={{lnurl }}'"
                 :options="{width: 800}"
                 class="rounded-borders"
               >
-              </qrcode>
+              </lnbits-qrcode>
             </q-responsive>
           </a>
         </div>
