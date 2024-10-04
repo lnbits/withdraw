@@ -11,7 +11,7 @@ from lnurl import (  # type: ignore
     MilliSatoshi,  # type: ignore
 )
 from lnurl import encode as lnurl_encode
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CreateWithdrawData(BaseModel):
@@ -42,7 +42,7 @@ class WithdrawLink(BaseModel):
     open_time: int = Query(0)
     used: int = Query(0)
     usescsv: str = Query(None)
-    number: int = Query(0)
+    number: int = Field(default=0, no_database=True)
     webhook_url: str = Query(None)
     webhook_headers: str = Query(None)
     webhook_body: str = Query(None)

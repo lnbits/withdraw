@@ -40,43 +40,45 @@ async def create_withdraw_link(
 
 
 async def get_withdraw_link(link_id: str, num=0) -> Optional[WithdrawLink]:
-    row = await db.fetchone(
+    link: WithdrawLink = await db.fetchone(
         "SELECT * FROM withdraw.withdraw_link WHERE id = :id",
         {"id": link_id},
+        WithdrawLink,
     )
-    if not row:
+    if not link:
         return None
 
-    link = dict(**row)
-    link["number"] = num
-
-    return WithdrawLink.parse_obj(link)
+    link.number = num
+    return link
 
 
 async def get_withdraw_link_by_hash(unique_hash: str, num=0) -> Optional[WithdrawLink]:
-    row = await db.fetchone(
+    link = await db.fetchone(
         "SELECT * FROM withdraw.withdraw_link WHERE unique_hash = :hash",
         {"hash": unique_hash},
+        WithdrawLink,
     )
-    if not row:
+    if not link:
         return None
 
-    link = dict(**row)
-    link["number"] = num
+    if not link:
+        return None
 
-    return WithdrawLink.parse_obj(link)
+    link.number = num
+    return link
 
 
 async def get_withdraw_links(
     wallet_ids: list[str], limit: int, offset: int
 ) -> tuple[list[WithdrawLink], int]:
     q = ",".join([f"'{w}'" for w in wallet_ids])
-    rows = await db.fetchall(
+    links = await db.fetchall(
         f"""
         SELECT * FROM withdraw.withdraw_link WHERE wallet IN ({q})
         ORDER BY open_time DESC LIMIT :limit OFFSET :offset
         """,
         {"limit": limit, "offset": offset},
+        WithdrawLink,
     )
 
     total = await db.fetchone(
@@ -86,7 +88,7 @@ async def get_withdraw_links(
         """
     )
 
-    return [WithdrawLink(**row) for row in rows], total["total"]
+    return links, total["total"]
 
 
 async def remove_unique_withdraw_link(link: WithdrawLink, unique_hash: str) -> None:
@@ -134,18 +136,19 @@ async def create_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
 
 
 async def get_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
-    rowid = await db.fetchone(
-        "SELECT * FROM withdraw.hash_check WHERE id = :id", {"id": the_hash}
+    hash_check = await db.fetchone(
+        "SELECT * FROM withdraw.hash_check WHERE id = :id", {"id": the_hash}, HashCheck
     )
-    rowlnurl = await db.fetchone(
+    hash_check_lnurl = await db.fetchone(
         "SELECT * FROM withdraw.hash_check WHERE lnurl_id = :id",
         {"id": lnurl_id},
+        HashCheck,
     )
-    if not rowlnurl:
+    if not hash_check_lnurl:
         await create_hash_check(the_hash, lnurl_id)
         return HashCheck(lnurl=True, hash=False)
     else:
-        if not rowid:
+        if not hash_check:
             await create_hash_check(the_hash, lnurl_id)
             return HashCheck(lnurl=True, hash=False)
         else:
