@@ -43,7 +43,7 @@ async def get_withdraw_link(link_id: str, num=0) -> Optional[WithdrawLink]:
     link: WithdrawLink = await db.fetchone(
         "SELECT * FROM withdraw.withdraw_link WHERE id = :id",
         {"id": link_id},
-        WithdrawLink,
+        WithdrawLink,  # type: ignore
     )
     if not link:
         return None
@@ -56,7 +56,7 @@ async def get_withdraw_link_by_hash(unique_hash: str, num=0) -> Optional[Withdra
     link = await db.fetchone(
         "SELECT * FROM withdraw.withdraw_link WHERE unique_hash = :hash",
         {"hash": unique_hash},
-        WithdrawLink,
+        WithdrawLink,  # type: ignore
     )
     if not link:
         return None
@@ -78,7 +78,7 @@ async def get_withdraw_links(
         ORDER BY open_time DESC LIMIT :limit OFFSET :offset
         """,
         {"limit": limit, "offset": offset},
-        WithdrawLink,
+        WithdrawLink,  # type: ignore
     )
 
     total = await db.fetchone(
@@ -137,12 +137,12 @@ async def create_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
 
 async def get_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
     hash_check = await db.fetchone(
-        "SELECT * FROM withdraw.hash_check WHERE id = :id", {"id": the_hash}, HashCheck
+        "SELECT * FROM withdraw.hash_check WHERE id = :id", {"id": the_hash}, HashCheck  # type: ignore
     )
     hash_check_lnurl = await db.fetchone(
         "SELECT * FROM withdraw.hash_check WHERE lnurl_id = :id",
         {"id": lnurl_id},
-        HashCheck,
+        HashCheck,  # type: ignore
     )
     if not hash_check_lnurl:
         await create_hash_check(the_hash, lnurl_id)
