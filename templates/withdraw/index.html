@@ -9,7 +9,11 @@
         <q-btn unelevated color="primary" @click="simpleformDialog.show = true"
           >Quick vouchers</q-btn
         >
-        <q-btn unelevated color="primary" @click="formDialog.show = true"
+        <q-btn
+          unelevated
+          color="primary"
+          @click="formDialog.show = true"
+          class="q-ml-md"
           >Advanced withdraw link(s)</q-btn
         >
       </q-card-section>
@@ -28,10 +32,10 @@
         <q-table
           dense
           flat
-          :data="sortedWithdrawLinks"
+          :rows="sortedWithdrawLinks"
           row-key="id"
           :columns="withdrawLinksTable.columns"
-          :pagination.sync="withdrawLinksTable.pagination"
+          v-model:pagination="withdrawLinksTable.pagination"
           @request="getWithdrawLinks"
         >
           {% raw %}
@@ -405,11 +409,9 @@
   <q-dialog v-model="qrCodeDialog.show" position="top">
     <q-card v-if="qrCodeDialog.data" class="q-pa-lg lnbits__dialog-card">
       <q-responsive :ratio="1" class="q-mx-xl q-mb-md">
-        <qrcode
+        <lnbits-qrcode
           :value="qrCodeDialog.data.url + '/?lightning=' + qrCodeDialog.data.lnurl"
-          :options="{width: 800}"
-          class="rounded-borders"
-        ></qrcode>
+        ></lnbits-qrcode>
         {% raw %}
       </q-responsive>
       <p style="word-break: break-all">

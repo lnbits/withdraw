@@ -20,7 +20,7 @@ def withdraw_renderer():
 @withdraw_ext_generic.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User = Depends(check_user_exists)):
     return withdraw_renderer().TemplateResponse(
-        "withdraw/index.html", {"request": request, "user": user.dict()}
+        "withdraw/index.html", {"request": request, "user": user.json()}
     )
 
 

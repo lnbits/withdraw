@@ -9,12 +9,9 @@
           {% endif %}
           <a class="text-secondary" href="lightning:{{ lnurl }}">
             <q-responsive :ratio="1" class="q-mx-md">
-              <qrcode
+              <lnbits-qrcode
                 :value="this.here + '/?lightning={{lnurl }}'"
-                :options="{width: 800}"
-                class="rounded-borders"
-              >
-              </qrcode>
+              ></lnbits-qrcode>
             </q-responsive>
           </a>
         </div>
@@ -52,12 +49,10 @@
 </div>
 {% endblock %} {% block scripts %}
 <script>
-  Vue.component(VueQrcode.name, VueQrcode)
-
-  new Vue({
+  window.app = Vue.createApp({
     el: '#vue',
-    mixins: [windowMixin],
-    data: function () {
+    mixins: [window.windowMixin],
+    data() {
       return {
         here: location.protocol + '//' + location.host,
         nfcTagWriting: false
