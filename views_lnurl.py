@@ -9,7 +9,8 @@ import shortuuid
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
-from lnbits.core.crud import update_payment_extra
+from lnbits.core.models import Payment
+from lnbits.core.crud import update_payment
 from lnbits.core.services import pay_invoice
 from loguru import logger
 
@@ -162,7 +163,7 @@ async def api_lnurl_callback(
         ) from exc
 
     try:
-        payment_hash = await pay_invoice(
+        payment = await pay_invoice(
             wallet_id=link.wallet,
             payment_request=pr,
             max_sat=link.max_withdrawable,
@@ -175,7 +176,7 @@ async def api_lnurl_callback(
         await delete_hash_check(id_unique_hash or unique_hash)
 
         if link.webhook_url:
-            await dispatch_webhook(link, payment_hash, pr)
+            await dispatch_webhook(link, payment, pr)
         return {"status": "OK"}
     except Exception as exc:
         # If payment fails, delete the hash stored so another attempt can be made.
@@ -193,14 +194,14 @@ def check_unique_link(link: WithdrawLink, unique_hash: str) -> bool:
 
 
 async def dispatch_webhook(
-    link: WithdrawLink, payment_hash: str, payment_request: str
+    link: WithdrawLink, payment: Payment, payment_request: str
 ) -> None:
     async with httpx.AsyncClient() as client:
         try:
             r: httpx.Response = await client.post(
                 link.webhook_url,
                 json={
-                    "payment_hash": payment_hash,
+                    "payment_hash": payment.payment_hash,
                     "payment_request": payment_request,
                     "lnurlw": link.id,
                     "body": json.loads(link.webhook_body) if link.webhook_body else "",
@@ -210,24 +211,17 @@ async def dispatch_webhook(
                 ),
                 timeout=40,
             )
-            await update_payment_extra(
-                payment_hash=payment_hash,
-                extra={
-                    "wh_success": r.is_success,
-                    "wh_message": r.reason_phrase,
-                    "wh_response": r.text,
-                },
-                outgoing=True,
-            )
+            payment.extra["wh_success"] = r.is_success
+            payment.extra["wh_message"] = r.reason_phrase
+            payment.extra["wh_response"] = r.text
+            await update_payment(payment)
         except Exception as exc:
             # webhook fails shouldn't cause the lnurlw to fail
             # since invoice is already paid
             logger.error(f"Caught exception when dispatching webhook url: {exc!s}")
-            await update_payment_extra(
-                payment_hash=payment_hash,
-                extra={"wh_success": False, "wh_message": str(exc)},
-                outgoing=True,
-            )
+            payment.extra["wh_success"] = False
+            payment.extra["wh_message"] = str(exc)
+            await update_payment(payment)
 
 
 # FOR LNURLs WHICH ARE UNIQUE
