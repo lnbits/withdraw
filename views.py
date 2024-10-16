@@ -36,7 +36,7 @@ async def display(request: Request, link_id):
         "withdraw/display.html",
         {
             "request": request,
-            "link": link.dict(),
+            "link": link.json(),
             "lnurl": link.lnurl(req=request),
             "unique": True,
         },
@@ -83,7 +83,7 @@ async def print_qr(request: Request, link_id):
 
         return withdraw_renderer().TemplateResponse(
             "withdraw/print_qr.html",
-            {"request": request, "link": link.dict(), "unique": False},
+            {"request": request, "link": link.json(), "unique": False},
         )
     links = []
     count = 0
@@ -130,7 +130,7 @@ async def csv(request: Request, link_id):
 
         return withdraw_renderer().TemplateResponse(
             "withdraw/csv.html",
-            {"request": request, "link": link.dict(), "unique": False},
+            {"request": request, "link": link.json(), "unique": False},
         )
     links = []
     count = 0

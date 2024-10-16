@@ -8,11 +8,9 @@
           <q-badge color="red" class="q-mb-md">Withdraw is spent.</q-badge>
           {% endif %}
           <a class="text-secondary" href="lightning:{{ lnurl }}">
-            <q-responsive :ratio="1" class="q-mx-md">
-              <lnbits-qrcode
-                :value="this.here + '/?lightning={{lnurl }}'"
-              ></lnbits-qrcode>
-            </q-responsive>
+            <lnbits-qrcode
+              :value="this.here + '/?lightning={{lnurl }}'"
+            ></lnbits-qrcode>
           </a>
         </div>
         <div class="row q-mt-lg q-gutter-sm">

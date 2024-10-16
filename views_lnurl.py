@@ -9,8 +9,8 @@ import shortuuid
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
-from lnbits.core.models import Payment
 from lnbits.core.crud import update_payment
+from lnbits.core.models import Payment
 from lnbits.core.services import pay_invoice
 from loguru import logger
 
