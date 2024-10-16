@@ -3,7 +3,7 @@ from http import HTTPStatus
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from lnbits.core.crud import get_user
+from lnbits.core.crud import get_user_by_id
 from lnbits.core.models import WalletTypeInfo
 from lnbits.decorators import require_admin_key, require_invoice_key
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
@@ -32,7 +32,7 @@ async def api_links(
     wallet_ids = [key_info.wallet.id]
 
     if all_wallets:
-        user = await get_user(key_info.wallet.user)
+        user = await get_user_by_id(key_info.wallet.user)
         wallet_ids = user.wallet_ids if user else []
 
     try:

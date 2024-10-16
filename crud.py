@@ -43,7 +43,7 @@ async def get_withdraw_link(link_id: str, num=0) -> Optional[WithdrawLink]:
     link: WithdrawLink = await db.fetchone(
         "SELECT * FROM withdraw.withdraw_link WHERE id = :id",
         {"id": link_id},
-        WithdrawLink,  # type: ignore
+        WithdrawLink,
     )
     if not link:
         return None
@@ -56,11 +56,8 @@ async def get_withdraw_link_by_hash(unique_hash: str, num=0) -> Optional[Withdra
     link = await db.fetchone(
         "SELECT * FROM withdraw.withdraw_link WHERE unique_hash = :hash",
         {"hash": unique_hash},
-        WithdrawLink,  # type: ignore
+        WithdrawLink,
     )
-    if not link:
-        return None
-
     if not link:
         return None
 
