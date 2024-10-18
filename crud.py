@@ -78,14 +78,15 @@ async def get_withdraw_links(
         WithdrawLink,  # type: ignore
     )
 
-    total = await db.fetchone(
+    result = await db.execute(
         f"""
         SELECT COUNT(*) as total FROM withdraw.withdraw_link
         WHERE wallet IN ({q})
         """
     )
+    total = await result.mappings().first()
 
-    return links, total["total"]
+    return links, total.total
 
 
 async def remove_unique_withdraw_link(link: WithdrawLink, unique_hash: str) -> None:
