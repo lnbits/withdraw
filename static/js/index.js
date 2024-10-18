@@ -1,15 +1,11 @@
-/* global Vue, VueQrcode, _, Quasar, LOCALE, windowMixin, LNbits */
-
-Vue.component(VueQrcode.name, VueQrcode)
-
-var locationPath = [
+const locationPath = [
   window.location.protocol,
   '//',
   window.location.host,
   window.location.pathname
 ].join('')
 
-var mapWithdrawLink = function (obj) {
+const mapWithdrawLink = function (obj) {
   obj._data = _.clone(obj)
   obj.min_fsat = new Intl.NumberFormat(LOCALE).format(obj.min_withdrawable)
   obj.max_fsat = new Intl.NumberFormat(LOCALE).format(obj.max_withdrawable)
@@ -22,9 +18,9 @@ var mapWithdrawLink = function (obj) {
 
 const CUSTOM_URL = '/static/images/default_voucher.png'
 
-new Vue({
+window.app = Vue.createApp({
   el: '#vue',
-  mixins: [windowMixin],
+  mixins: [window.windowMixin],
   data: function () {
     return {
       checker: null,
@@ -115,8 +111,6 @@ new Vue({
         offset: (pagination.page - 1) * pagination.rowsPerPage
       }
 
-      var self = this
-
       LNbits.api
         .request(
           'GET',
@@ -130,7 +124,7 @@ new Vue({
           this.withdrawLinksTable.pagination.rowsNumber = response.data.total
         })
         .catch(error => {
-          clearInterval(self.checker)
+          clearInterval(this.checker)
           LNbits.utils.notifyApiError(error)
         })
     },
@@ -148,7 +142,7 @@ new Vue({
       }
     },
     openQrCodeDialog: function (linkId) {
-      var link = _.findWhere(this.withdrawLinks, {id: linkId})
+      const link = _.findWhere(this.withdrawLinks, {id: linkId})
 
       this.qrCodeDialog.data = _.clone(link)
       this.qrCodeDialog.data.url =
@@ -156,16 +150,16 @@ new Vue({
       this.qrCodeDialog.show = true
     },
     openUpdateDialog: function (linkId) {
-      var link = _.findWhere(this.withdrawLinks, {id: linkId})
+      let link = _.findWhere(this.withdrawLinks, {id: linkId})
       link._data.has_webhook = link._data.webhook_url ? true : false
       this.formDialog.data = _.clone(link._data)
       this.formDialog.show = true
     },
     sendFormData: function () {
-      var wallet = _.findWhere(this.g.user.wallets, {
+      const wallet = _.findWhere(this.g.user.wallets, {
         id: this.formDialog.data.wallet
       })
-      var data = _.omit(this.formDialog.data, 'wallet')
+      const data = _.omit(this.formDialog.data, 'wallet')
 
       if (!data.use_custom) {
         data.custom_url = null
@@ -190,10 +184,10 @@ new Vue({
       }
     },
     simplesendFormData: function () {
-      var wallet = _.findWhere(this.g.user.wallets, {
+      const wallet = _.findWhere(this.g.user.wallets, {
         id: this.simpleformDialog.data.wallet
       })
-      var data = _.omit(this.simpleformDialog.data, 'wallet')
+      const data = _.omit(this.simpleformDialog.data, 'wallet')
 
       data.wait_time = 1
       data.min_withdrawable = data.max_withdrawable
@@ -254,21 +248,20 @@ new Vue({
           LNbits.utils.notifyApiError(error)
         })
     },
-    deleteWithdrawLink: function (linkId) {
-      var self = this
-      var link = _.findWhere(this.withdrawLinks, {id: linkId})
+    deleteWithdrawLink(linkId) {
+      const link = _.findWhere(this.withdrawLinks, {id: linkId})
 
       LNbits.utils
         .confirmDialog('Are you sure you want to delete this withdraw link?')
-        .onOk(function () {
+        .onOk(() => {
           LNbits.api
             .request(
               'DELETE',
               '/withdraw/api/v1/links/' + linkId,
-              _.findWhere(self.g.user.wallets, {id: link.wallet}).adminkey
+              _.findWhere(this.g.user.wallets, {id: link.wallet}).adminkey
             )
-            .then(function (response) {
-              self.withdrawLinks = _.reject(self.withdrawLinks, function (obj) {
+            .then(response => {
+              this.withdrawLinks = _.reject(this.withdrawLinks, function (obj) {
                 return obj.id === linkId
               })
             })

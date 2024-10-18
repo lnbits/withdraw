@@ -2,7 +2,7 @@
 in page %} {% for one in threes %} {{one}}, {% endfor %} {% endfor %} {% endfor
 %} {% endblock %} {% block scripts %}
 <script>
-  new Vue({
+  window.app = Vue.createApp({
     el: '#vue',
     data: function () {
       return {}
