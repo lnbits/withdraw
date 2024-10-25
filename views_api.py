@@ -3,10 +3,10 @@ from http import HTTPStatus
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+
 from lnbits.core.crud import get_user
 from lnbits.core.models import WalletTypeInfo
 from lnbits.decorators import require_admin_key, require_invoice_key
-from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 
 from .crud import (
     create_withdraw_link,
@@ -133,6 +133,10 @@ async def api_link_create_or_update(
                 current_number += 1
                 numbers.append(str(current_number))
             link.usescsv = ",".join(numbers)
+
+        for k, v in data.dict().items():
+            if v is not None:
+                setattr(link, k, v)
 
         link = await update_withdraw_link(link)
     else:
