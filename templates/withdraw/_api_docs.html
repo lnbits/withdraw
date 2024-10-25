@@ -24,7 +24,7 @@
         <h5 class="text-caption q-mt-sm q-mb-none">Curl example</h5>
         <code
           >curl -X GET {{ request.base_url }}withdraw/api/v1/links -H
-          "X-Api-Key: <span v-text="user.wallets[0].inkey"></span>"
+          "X-Api-Key: <span v-text="g.user.wallets[0].inkey"></span>"
         </code>
       </q-card-section>
     </q-card>
@@ -52,7 +52,7 @@
         <code
           >curl -X GET {{ request.base_url
           }}withdraw/api/v1/links/&lt;withdraw_id&gt; -H "X-Api-Key:
-          <span v-text="user.wallets[0].inkey"></span>"
+          <span v-text="g.user.wallets[0].inkey"></span>"
         </code>
       </q-card-section>
     </q-card>
@@ -86,7 +86,7 @@
           "max_withdrawable": &lt;integer&gt;, "uses": &lt;integer&gt;,
           "wait_time": &lt;integer&gt;, "is_unique": &lt;boolean&gt;,
           "webhook_url": &lt;string&gt;}' -H "Content-type: application/json" -H
-          "X-Api-Key: <span v-text="user.wallets[0].adminkey"></span>"
+          "X-Api-Key: <span v-text="g.user.wallets[0].adminkey"></span>"
         </code>
       </q-card-section>
     </q-card>
@@ -123,7 +123,7 @@
           "max_withdrawable": &lt;integer&gt;, "uses": &lt;integer&gt;,
           "wait_time": &lt;integer&gt;, "is_unique": &lt;boolean&gt;}' -H
           "Content-type: application/json" -H "X-Api-Key:
-          <span v-text="user.wallets[0].adminkey"></span>"
+          <span v-text="g.user.wallets[0].adminkey"></span>"
         </code>
       </q-card-section>
     </q-card>
@@ -148,7 +148,7 @@
         <code
           >curl -X DELETE {{ request.base_url
           }}withdraw/api/v1/links/&lt;withdraw_id&gt; -H "X-Api-Key:
-          <span v-text="user.wallets[0].adminkey"></span>"
+          <span v-text="g.user.wallets[0].adminkey"></span>"
         </code>
       </q-card-section>
     </q-card>
@@ -176,7 +176,7 @@
         <code
           >curl -X GET {{ request.base_url
           }}withdraw/api/v1/links/&lt;the_hash&gt;/&lt;lnurl_id&gt; -H
-          "X-Api-Key: <span v-text="user.wallets[0].inkey"></span>"
+          "X-Api-Key: <span v-text="g.user.wallets[0].inkey"></span>"
         </code>
       </q-card-section>
     </q-card>
