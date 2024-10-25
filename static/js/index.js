@@ -21,7 +21,7 @@ const CUSTOM_URL = '/static/images/default_voucher.png'
 window.app = Vue.createApp({
   el: '#vue',
   mixins: [window.windowMixin],
-  data: function () {
+  data() {
     return {
       checker: null,
       withdrawLinks: [],
@@ -93,14 +93,14 @@ window.app = Vue.createApp({
     }
   },
   computed: {
-    sortedWithdrawLinks: function () {
+    sortedWithdrawLinks() {
       return this.withdrawLinks.sort(function (a, b) {
         return b.uses_left - a.uses_left
       })
     }
   },
   methods: {
-    getWithdrawLinks: function (props) {
+    getWithdrawLinks(props) {
       if (props) {
         this.withdrawLinksTable.pagination = props.pagination
       }
@@ -118,9 +118,7 @@ window.app = Vue.createApp({
           this.g.user.wallets[0].inkey
         )
         .then(response => {
-          this.withdrawLinks = response.data.data.map(function (obj) {
-            return mapWithdrawLink(obj)
-          })
+          this.withdrawLinks = response.data.data.map(mapWithdrawLink)
           this.withdrawLinksTable.pagination.rowsNumber = response.data.total
         })
         .catch(error => {
@@ -128,20 +126,20 @@ window.app = Vue.createApp({
           LNbits.utils.notifyApiError(error)
         })
     },
-    closeFormDialog: function () {
+    closeFormDialog() {
       this.formDialog.data = {
         is_unique: false,
         use_custom: false,
         has_webhook: false
       }
     },
-    simplecloseFormDialog: function () {
+    simplecloseFormDialog() {
       this.simpleformDialog.data = {
         is_unique: false,
         use_custom: false
       }
     },
-    openQrCodeDialog: function (linkId) {
+    openQrCodeDialog(linkId) {
       const link = _.findWhere(this.withdrawLinks, {id: linkId})
 
       this.qrCodeDialog.data = _.clone(link)
@@ -149,13 +147,13 @@ window.app = Vue.createApp({
         window.location.protocol + '//' + window.location.host
       this.qrCodeDialog.show = true
     },
-    openUpdateDialog: function (linkId) {
+    openUpdateDialog(linkId) {
       let link = _.findWhere(this.withdrawLinks, {id: linkId})
       link._data.has_webhook = link._data.webhook_url ? true : false
       this.formDialog.data = _.clone(link._data)
       this.formDialog.show = true
     },
-    sendFormData: function () {
+    sendFormData() {
       const wallet = _.findWhere(this.g.user.wallets, {
         id: this.formDialog.data.wallet
       })
@@ -183,7 +181,7 @@ window.app = Vue.createApp({
         this.createWithdrawLink(wallet, data)
       }
     },
-    simplesendFormData: function () {
+    simplesendFormData() {
       const wallet = _.findWhere(this.g.user.wallets, {
         id: this.simpleformDialog.data.wallet
       })
@@ -208,7 +206,7 @@ window.app = Vue.createApp({
         this.createWithdrawLink(wallet, data)
       }
     },
-    updateWithdrawLink: function (wallet, data) {
+    updateWithdrawLink(wallet, data) {
       // Remove webhook info if toggle is set to false
       if (!data.has_webhook) {
         data.webhook_url = null
@@ -235,7 +233,7 @@ window.app = Vue.createApp({
           LNbits.utils.notifyApiError(error)
         })
     },
-    createWithdrawLink: function (wallet, data) {
+    createWithdrawLink(wallet, data) {
       LNbits.api
         .request('POST', '/withdraw/api/v1/links', wallet.adminkey, data)
         .then(response => {
@@ -270,7 +268,7 @@ window.app = Vue.createApp({
             })
         })
     },
-    writeNfcTag: async function (lnurl) {
+    async writeNfcTag(lnurl) {
       try {
         if (typeof NDEFReader == 'undefined') {
           throw {
@@ -314,7 +312,7 @@ window.app = Vue.createApp({
       )
     }
   },
-  created: function () {
+  created() {
     if (this.g.user.wallets.length) {
       this.getWithdrawLinks()
       this.checker = setInterval(this.getWithdrawLinks, 300000)
