@@ -142,10 +142,3 @@ async def m007_add_created_at_timestamp(db):
         "ALTER TABLE withdraw.withdraw_link "
         f"ADD COLUMN created_at TIMESTAMP DEFAULT {db.timestamp_column_default}"
     )
-    # Set created_at to current time for all existing rows
-    await db.execute(
-        f"""
-        UPDATE withdraw.withdraw_link SET created_at = {db.timestamp_placeholder}
-        """,
-        (int(time()),),
-    )
