@@ -6,11 +6,12 @@
     <page size="A4" id="pdfprint">
       {% for one in page %}
       <div class="wrapper">
-        <img src="{{custom_url}}" alt="..." />
+        <img class="lnurlw_design" src="{{custom_url}}" alt="..." />
         <span>{{ amt }} sats</span>
         <div class="lnurlw">
           <lnbits-qrcode
             :value="theurl + '/?lightning={{one}}'"
+            :options="{width: 98, margin: 2, logo: false}"
           ></lnbits-qrcode>
         </div>
       </div>
@@ -51,7 +52,7 @@
     top: calc(3.2mm + 1rem);
     right: calc(4mm + 1rem);
   }
-  .wrapper img {
+  .wrapper img.lnurlw_design {
     display: block;
     width: 187mm;
     height: auto;
