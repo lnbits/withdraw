@@ -16,7 +16,7 @@ from .crud import (
     get_withdraw_links,
     update_withdraw_link,
 )
-from .models import CreateWithdrawData
+from .models import CreateWithdrawData, HashCheck
 
 withdraw_ext_api = APIRouter(prefix="/api/v1")
 
@@ -35,21 +35,11 @@ async def api_links(
         user = await get_user(key_info.wallet.user)
         wallet_ids = user.wallet_ids if user else []
 
-    try:
-        links, total = await get_withdraw_links(wallet_ids, limit, offset)
-        return {
-            "data": [{**link.dict(), **{"lnurl": link.lnurl(req)}} for link in links],
-            "total": total,
-        }
-
-    except LnurlInvalidUrl as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.UPGRADE_REQUIRED,
-            detail="""
-                LNURLs need to be delivered over a publically
-                accessible `https` domain or Tor.
-            """,
-        ) from exc
+    links, total = await get_withdraw_links(wallet_ids, limit, offset)
+    return {
+        "data": [{**link.dict(), **{"lnurl": link.lnurl(req)}} for link in links],
+        "total": total,
+    }
 
 
 @withdraw_ext_api.get("/links/{link_id}", status_code=HTTPStatus.OK)
@@ -147,7 +137,7 @@ async def api_link_create_or_update(
         link = await update_withdraw_link(link)
     else:
         link = await create_withdraw_link(wallet_id=key_info.wallet.id, data=data)
-    assert link
+
     return {**link.dict(), **{"lnurl": link.lnurl(req)}}
 
 
@@ -176,6 +166,6 @@ async def api_link_delete(
     status_code=HTTPStatus.OK,
     dependencies=[Depends(require_invoice_key)],
 )
-async def api_hash_retrieve(the_hash, lnurl_id):
+async def api_hash_retrieve(the_hash, lnurl_id) -> HashCheck:
     hash_check = await get_hash_check(the_hash, lnurl_id)
     return hash_check
