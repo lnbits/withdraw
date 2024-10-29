@@ -44,7 +44,7 @@ class WithdrawLink(BaseModel):
     webhook_headers: str = Query(None)
     webhook_body: str = Query(None)
     custom_url: str = Query(None)
-    created_at: datetime = datetime.now(timezone.utc)
+    created_at: datetime
 
     @property
     def is_spent(self) -> bool:
@@ -72,7 +72,7 @@ class WithdrawLink(BaseModel):
     def lnurl_response(self, req: Request) -> LnurlWithdrawResponse:
         url = req.url_for("withdraw.api_lnurl_callback", unique_hash=self.unique_hash)
         return LnurlWithdrawResponse(
-            callback=ClearnetUrl(url, scheme="https"), # type: ignore
+            callback=ClearnetUrl(url, scheme="https"),  # type: ignore
             k1=self.k1,
             minWithdrawable=MilliSatoshi(self.min_withdrawable * 1000),
             maxWithdrawable=MilliSatoshi(self.max_withdrawable * 1000),
