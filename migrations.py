@@ -1,5 +1,3 @@
-
-
 async def m001_initial(db):
     """
     Creates an improved withdraw table and migrates the existing data.
