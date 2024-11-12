@@ -1,4 +1,3 @@
-from time import time
 
 
 async def m001_initial(db):
