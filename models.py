@@ -1,17 +1,15 @@
-import datetime
+from datetime import datetime
 
 import shortuuid
 from fastapi import Query, Request
-
-# TODO remove type: ignore when 0.12.11 is released
-from lnurl import (  # type: ignore
-    ClearnetUrl,  # type: ignore
+from lnurl import (
+    ClearnetUrl,
     Lnurl,
     LnurlWithdrawResponse,
-    MilliSatoshi,  # type: ignore
+    MilliSatoshi,
 )
 from lnurl import encode as lnurl_encode
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CreateWithdrawData(BaseModel):
@@ -29,7 +27,6 @@ class CreateWithdrawData(BaseModel):
 
 class WithdrawLink(BaseModel):
     id: str
-    created_at: datetime.datetime
     wallet: str = Query(None)
     title: str = Query(None)
     min_withdrawable: int = Query(0)
@@ -42,11 +39,12 @@ class WithdrawLink(BaseModel):
     open_time: int = Query(0)
     used: int = Query(0)
     usescsv: str = Query(None)
-    number: int = Query(0)
+    number: int = Field(default=0, no_database=True)
     webhook_url: str = Query(None)
     webhook_headers: str = Query(None)
     webhook_body: str = Query(None)
     custom_url: str = Query(None)
+    created_at: datetime
 
     @property
     def is_spent(self) -> bool:

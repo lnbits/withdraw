@@ -1,7 +1,5 @@
 {% extends "base.html" %} {% from "macros.jinja" import window_vars with context
-%} {% block scripts %} {{ window_vars(user) }}
-<script src="/withdraw/static/js/index.js"></script>
-{% endblock %} {% block page %}
+%} {% block page %}
 <div class="row q-col-gutter-md">
   <div class="col-12 col-md-7 q-gutter-y-md">
     <q-card>
@@ -9,7 +7,11 @@
         <q-btn unelevated color="primary" @click="simpleformDialog.show = true"
           >Quick vouchers</q-btn
         >
-        <q-btn unelevated color="primary" @click="formDialog.show = true"
+        <q-btn
+          unelevated
+          color="primary"
+          @click="formDialog.show = true"
+          class="q-ml-md"
           >Advanced withdraw link(s)</q-btn
         >
       </q-card-section>
@@ -28,20 +30,22 @@
         <q-table
           dense
           flat
-          :data="sortedWithdrawLinks"
+          :rows="sortedWithdrawLinks"
           row-key="id"
           :columns="withdrawLinksTable.columns"
-          :pagination.sync="withdrawLinksTable.pagination"
+          v-model:pagination="withdrawLinksTable.pagination"
           @request="getWithdrawLinks"
         >
-          {% raw %}
           <template v-slot:header="props">
             <q-tr :props="props">
               <q-th auto-width></q-th>
               <q-th auto-width></q-th>
-              <q-th v-for="col in props.cols" :key="col.name" :props="props">
-                {{ col.label }}
-              </q-th>
+              <q-th
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                v-text="col.label"
+              ></q-th>
               <q-th auto-width></q-th>
             </q-tr>
           </template>
@@ -110,17 +114,22 @@
                   color="pink"
                 ></q-btn>
               </q-td>
-              <q-td v-for="col in props.cols" :key="col.name" :props="props">
-                {{ col.value }}
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                v-text="col.value"
+              >
               </q-td>
               <q-td>
                 <q-icon v-if="props.row.webhook_url" size="14px" name="http">
-                  <q-tooltip>Webhook to {{ props.row.webhook_url}}</q-tooltip>
+                  <q-tooltip
+                    >Webhook to <span v-text="props.row.webhook_url"></span
+                  ></q-tooltip>
                 </q-icon>
               </q-td>
             </q-tr>
           </template>
-          {% endraw %}
         </q-table>
       </q-card-section>
     </q-card>
@@ -404,34 +413,29 @@
 
   <q-dialog v-model="qrCodeDialog.show" position="top">
     <q-card v-if="qrCodeDialog.data" class="q-pa-lg lnbits__dialog-card">
-      <q-responsive :ratio="1" class="q-mx-xl q-mb-md">
-        <qrcode
-          :value="qrCodeDialog.data.url + '/?lightning=' + qrCodeDialog.data.lnurl"
-          :options="{width: 800}"
-          class="rounded-borders"
-        ></qrcode>
-        {% raw %}
-      </q-responsive>
+      <lnbits-qrcode
+        :value="qrCodeDialog.data.url + '/?lightning=' + qrCodeDialog.data.lnurl"
+      ></lnbits-qrcode>
       <p style="word-break: break-all">
-        <strong>ID:</strong> {{ qrCodeDialog.data.id }}<br />
-        <strong>Unique:</strong> {{ qrCodeDialog.data.is_unique }}<span
-          v-if="qrCodeDialog.data.is_unique"
-          class="text-deep-purple"
-        >
+        <strong>ID:</strong> <span v-text="qrCodeDialog.data.id"></span><br />
+        <strong>Unique:</strong>
+        <span v-text="qrCodeDialog.data.is_unique"></span>
+        <span v-if="qrCodeDialog.data.is_unique" class="text-deep-purple">
           (QR code will change after each withdrawal)</span
         ><br />
-        <strong>Max. withdrawable:</strong> {{
-        qrCodeDialog.data.max_withdrawable }} sat<br />
-        <strong>Wait time:</strong> {{ qrCodeDialog.data.wait_time }} seconds<br />
-        <strong>Withdraws:</strong> {{ qrCodeDialog.data.used }} / {{
-        qrCodeDialog.data.uses }}
+        <strong>Max. withdrawable:</strong>
+        <span v-text="qrCodeDialog.data.max_withdrawable"></span> sat<br />
+        <strong>Wait time:</strong>
+        <span v-text="qrCodeDialog.data.wait_time"></span> seconds<br />
+        <strong>Withdraws:</strong>
+        <span v-text="qrCodeDialog.data.used"></span>/
+        <span v-text="qrCodeDialog.data.uses"></span><br />
         <q-linear-progress
           :value="qrCodeDialog.data.used / qrCodeDialog.data.uses"
           color="primary"
           class="q-mt-sm"
         ></q-linear-progress>
       </p>
-      {% endraw %}
       <div class="row q-mt-lg q-gutter-sm">
         <q-btn
           outline
@@ -469,4 +473,6 @@
     </q-card>
   </q-dialog>
 </div>
+{% endblock %}{% block scripts %} {{ window_vars(user) }}
+<script src="{{ static_url_for('withdraw/static', path='js/index.js') }}"></script>
 {% endblock %}

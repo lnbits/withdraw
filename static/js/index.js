@@ -1,15 +1,11 @@
-/* global Vue, VueQrcode, _, Quasar, LOCALE, windowMixin, LNbits */
-
-Vue.component(VueQrcode.name, VueQrcode)
-
-var locationPath = [
+const locationPath = [
   window.location.protocol,
   '//',
   window.location.host,
   window.location.pathname
 ].join('')
 
-var mapWithdrawLink = function (obj) {
+const mapWithdrawLink = function (obj) {
   obj._data = _.clone(obj)
   obj.min_fsat = new Intl.NumberFormat(LOCALE).format(obj.min_withdrawable)
   obj.max_fsat = new Intl.NumberFormat(LOCALE).format(obj.max_withdrawable)
@@ -22,10 +18,10 @@ var mapWithdrawLink = function (obj) {
 
 const CUSTOM_URL = '/static/images/default_voucher.png'
 
-new Vue({
+window.app = Vue.createApp({
   el: '#vue',
-  mixins: [windowMixin],
-  data: function () {
+  mixins: [window.windowMixin],
+  data() {
     return {
       checker: null,
       withdrawLinks: [],
@@ -97,14 +93,14 @@ new Vue({
     }
   },
   computed: {
-    sortedWithdrawLinks: function () {
+    sortedWithdrawLinks() {
       return this.withdrawLinks.sort(function (a, b) {
         return b.uses_left - a.uses_left
       })
     }
   },
   methods: {
-    getWithdrawLinks: function (props) {
+    getWithdrawLinks(props) {
       if (props) {
         this.withdrawLinksTable.pagination = props.pagination
       }
@@ -115,8 +111,6 @@ new Vue({
         offset: (pagination.page - 1) * pagination.rowsPerPage
       }
 
-      var self = this
-
       LNbits.api
         .request(
           'GET',
@@ -124,48 +118,46 @@ new Vue({
           this.g.user.wallets[0].inkey
         )
         .then(response => {
-          this.withdrawLinks = response.data.data.map(function (obj) {
-            return mapWithdrawLink(obj)
-          })
+          this.withdrawLinks = response.data.data.map(mapWithdrawLink)
           this.withdrawLinksTable.pagination.rowsNumber = response.data.total
         })
         .catch(error => {
-          clearInterval(self.checker)
+          clearInterval(this.checker)
           LNbits.utils.notifyApiError(error)
         })
     },
-    closeFormDialog: function () {
+    closeFormDialog() {
       this.formDialog.data = {
         is_unique: false,
         use_custom: false,
         has_webhook: false
       }
     },
-    simplecloseFormDialog: function () {
+    simplecloseFormDialog() {
       this.simpleformDialog.data = {
         is_unique: false,
         use_custom: false
       }
     },
-    openQrCodeDialog: function (linkId) {
-      var link = _.findWhere(this.withdrawLinks, {id: linkId})
+    openQrCodeDialog(linkId) {
+      const link = _.findWhere(this.withdrawLinks, {id: linkId})
 
       this.qrCodeDialog.data = _.clone(link)
       this.qrCodeDialog.data.url =
         window.location.protocol + '//' + window.location.host
       this.qrCodeDialog.show = true
     },
-    openUpdateDialog: function (linkId) {
-      var link = _.findWhere(this.withdrawLinks, {id: linkId})
+    openUpdateDialog(linkId) {
+      let link = _.findWhere(this.withdrawLinks, {id: linkId})
       link._data.has_webhook = link._data.webhook_url ? true : false
       this.formDialog.data = _.clone(link._data)
       this.formDialog.show = true
     },
-    sendFormData: function () {
-      var wallet = _.findWhere(this.g.user.wallets, {
+    sendFormData() {
+      const wallet = _.findWhere(this.g.user.wallets, {
         id: this.formDialog.data.wallet
       })
-      var data = _.omit(this.formDialog.data, 'wallet')
+      const data = _.omit(this.formDialog.data, 'wallet')
 
       if (!data.use_custom) {
         data.custom_url = null
@@ -189,11 +181,11 @@ new Vue({
         this.createWithdrawLink(wallet, data)
       }
     },
-    simplesendFormData: function () {
-      var wallet = _.findWhere(this.g.user.wallets, {
+    simplesendFormData() {
+      const wallet = _.findWhere(this.g.user.wallets, {
         id: this.simpleformDialog.data.wallet
       })
-      var data = _.omit(this.simpleformDialog.data, 'wallet')
+      const data = _.omit(this.simpleformDialog.data, 'wallet')
 
       data.wait_time = 1
       data.min_withdrawable = data.max_withdrawable
@@ -214,7 +206,7 @@ new Vue({
         this.createWithdrawLink(wallet, data)
       }
     },
-    updateWithdrawLink: function (wallet, data) {
+    updateWithdrawLink(wallet, data) {
       // Remove webhook info if toggle is set to false
       if (!data.has_webhook) {
         data.webhook_url = null
@@ -241,7 +233,7 @@ new Vue({
           LNbits.utils.notifyApiError(error)
         })
     },
-    createWithdrawLink: function (wallet, data) {
+    createWithdrawLink(wallet, data) {
       LNbits.api
         .request('POST', '/withdraw/api/v1/links', wallet.adminkey, data)
         .then(response => {
@@ -254,21 +246,20 @@ new Vue({
           LNbits.utils.notifyApiError(error)
         })
     },
-    deleteWithdrawLink: function (linkId) {
-      var self = this
-      var link = _.findWhere(this.withdrawLinks, {id: linkId})
+    deleteWithdrawLink(linkId) {
+      const link = _.findWhere(this.withdrawLinks, {id: linkId})
 
       LNbits.utils
         .confirmDialog('Are you sure you want to delete this withdraw link?')
-        .onOk(function () {
+        .onOk(() => {
           LNbits.api
             .request(
               'DELETE',
               '/withdraw/api/v1/links/' + linkId,
-              _.findWhere(self.g.user.wallets, {id: link.wallet}).adminkey
+              _.findWhere(this.g.user.wallets, {id: link.wallet}).adminkey
             )
-            .then(function (response) {
-              self.withdrawLinks = _.reject(self.withdrawLinks, function (obj) {
+            .then(response => {
+              this.withdrawLinks = _.reject(this.withdrawLinks, function (obj) {
                 return obj.id === linkId
               })
             })
@@ -277,7 +268,7 @@ new Vue({
             })
         })
     },
-    writeNfcTag: async function (lnurl) {
+    async writeNfcTag(lnurl) {
       try {
         if (typeof NDEFReader == 'undefined') {
           throw {
@@ -321,7 +312,7 @@ new Vue({
       )
     }
   },
-  created: function () {
+  created() {
     if (this.g.user.wallets.length) {
       this.getWithdrawLinks()
       this.checker = setInterval(this.getWithdrawLinks, 300000)

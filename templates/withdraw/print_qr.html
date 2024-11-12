@@ -10,10 +10,11 @@
           {% for one in threes %}
           <td style="width: 105mm">
             <center>
-              <qrcode
+              <lnbits-qrcode
+                style="width: fit-content"
                 :value="theurl + '/?lightning={{one}}'"
                 :options="{width: 150}"
-              ></qrcode>
+              ></lnbits-qrcode>
             </center>
           </td>
           {% endfor %}
@@ -53,11 +54,9 @@
 </style>
 {% endblock %} {% block scripts %}
 <script>
-  Vue.component(VueQrcode.name, VueQrcode)
-
-  new Vue({
+  window.app = Vue.createApp({
     el: '#vue',
-    data: function () {
+    data() {
       return {
         theurl: location.protocol + '//' + location.host,
         printDialog: {
