@@ -69,12 +69,21 @@ async def get_withdraw_links(
     wallet_ids: list[str], limit: int, offset: int
 ) -> tuple[list[WithdrawLink], int]:
     q = ",".join([f"'{w}'" for w in wallet_ids])
-    links = await db.fetchall(
-        f"""
+
+    query_str = f"""
         SELECT * FROM withdraw.withdraw_link WHERE wallet IN ({q})
-        ORDER BY open_time DESC LIMIT :limit OFFSET :offset
-        """,
-        {"limit": limit, "offset": offset},
+        ORDER BY open_time DESC
+        """
+    
+    if limit > 0:
+        query_str += f""" LIMIT :limit OFFSET :offset"""
+        query_params = {"limit": limit, "offset": offset}
+    else:
+        query_params = {}
+
+    links = await db.fetchall(
+        query_str,
+        query_params,
         WithdrawLink,
     )
 
@@ -112,11 +121,7 @@ async def update_withdraw_link(link: WithdrawLink) -> WithdrawLink:
 
 async def delete_withdraw_link(link_id: str) -> None:
     await db.execute(
-        f"UPDATE withdraw.withdraw_link SET {q} WHERE id = ?",
-        (*kwargs.values(), link_id),
-    )
-    row = await db.fetchone(
-        "SELECT * FROM withdraw.withdraw_link WHERE id = ?", (link_id,)
+        "DELETE FROM withdraw.withdraw_link WHERE id = :id", {"id": link_id}
     )
 
 
@@ -128,30 +133,29 @@ def chunks(lst, n):
 async def create_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
     await db.execute(
         """
-        INSERT INTO withdraw.hash_check (
-            id,
-            lnurl_id
-        )
-        VALUES (?, ?)
+        INSERT INTO withdraw.hash_check (id, lnurl_id)
+        VALUES (:id, :lnurl_id)
         """,
-        (the_hash, lnurl_id),
+        {"id": the_hash, "lnurl_id": lnurl_id},
     )
     hash_check = await get_hash_check(the_hash, lnurl_id)
     return hash_check
 
 
 async def get_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
-    rowid = await db.fetchone(
-        "SELECT * FROM withdraw.hash_check WHERE id = ?", (the_hash,)
+    hash_check = await db.fetchone(
+        "SELECT * FROM withdraw.hash_check WHERE id = :id", {"id": the_hash}, HashCheck
     )
-    rowlnurl = await db.fetchone(
-        "SELECT * FROM withdraw.hash_check WHERE lnurl_id = ?", (lnurl_id,)
+    hash_check_lnurl = await db.fetchone(
+        "SELECT * FROM withdraw.hash_check WHERE lnurl_id = :id",
+        {"id": lnurl_id},
+        HashCheck,
     )
-    if not rowlnurl:
+    if not hash_check_lnurl:
         await create_hash_check(the_hash, lnurl_id)
         return HashCheck(lnurl=True, hash=False)
     else:
-        if not rowid:
+        if not hash_check:
             await create_hash_check(the_hash, lnurl_id)
             return HashCheck(lnurl=True, hash=False)
         else:
