@@ -1,6 +1,3 @@
-from time import time
-
-
 async def m001_initial(db):
     """
     Creates an improved withdraw table and migrates the existing data.
@@ -141,11 +138,4 @@ async def m007_add_created_at_timestamp(db):
     await db.execute(
         "ALTER TABLE withdraw.withdraw_link "
         f"ADD COLUMN created_at TIMESTAMP DEFAULT {db.timestamp_column_default}"
-    )
-    # Set created_at to current time for all existing rows
-    await db.execute(
-        f"""
-        UPDATE withdraw.withdraw_link SET created_at = {db.timestamp_placeholder}
-        """,
-        (int(time()),),
     )
