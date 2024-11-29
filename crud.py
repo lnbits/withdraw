@@ -69,12 +69,21 @@ async def get_withdraw_links(
     wallet_ids: list[str], limit: int, offset: int
 ) -> tuple[list[WithdrawLink], int]:
     q = ",".join([f"'{w}'" for w in wallet_ids])
-    links = await db.fetchall(
-        f"""
+
+    query_str = f"""
         SELECT * FROM withdraw.withdraw_link WHERE wallet IN ({q})
-        ORDER BY open_time DESC LIMIT :limit OFFSET :offset
-        """,
-        {"limit": limit, "offset": offset},
+        ORDER BY open_time DESC
+        """
+
+    if limit > 0:
+        query_str += """ LIMIT :limit OFFSET :offset"""
+        query_params = {"limit": limit, "offset": offset}
+    else:
+        query_params = {}
+
+    links = await db.fetchall(
+        query_str,
+        query_params,
         WithdrawLink,
     )
 
