@@ -74,9 +74,9 @@ async def get_withdraw_links(
         SELECT * FROM withdraw.withdraw_link WHERE wallet IN ({q})
         ORDER BY open_time DESC
         """
-    
+
     if limit > 0:
-        query_str += f""" LIMIT :limit OFFSET :offset"""
+        query_str += """ LIMIT :limit OFFSET :offset"""
         query_params = {"limit": limit, "offset": offset}
     else:
         query_params = {}
