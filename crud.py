@@ -143,11 +143,18 @@ async def create_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
 
 
 async def get_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
+
     hash_check = await db.fetchone(
-        "SELECT * FROM withdraw.hash_check WHERE id = :id", {"id": the_hash}, HashCheck
+        """
+            SELECT id as hash, lnurl_id as lnurl 
+            FROM withdraw.hash_check WHERE id = :id
+        """, {"id": the_hash}, HashCheck
     )
     hash_check_lnurl = await db.fetchone(
-        "SELECT * FROM withdraw.hash_check WHERE lnurl_id = :id",
+        """
+            SELECT id as hash, lnurl_id as lnurl 
+            FROM withdraw.hash_check WHERE lnurl_id = :id
+        """,
         {"id": lnurl_id},
         HashCheck,
     )
