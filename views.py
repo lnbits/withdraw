@@ -9,6 +9,7 @@ from lnbits.decorators import check_user_exists
 from lnbits.helpers import template_renderer
 
 from .crud import chunks, get_withdraw_link
+from .helpers import create_lnurl
 
 withdraw_ext_generic = APIRouter()
 
@@ -32,12 +33,21 @@ async def display(request: Request, link_id):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
         )
+
+    try:
+        lnurl = create_lnurl(link, request)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
     return withdraw_renderer().TemplateResponse(
         "withdraw/display.html",
         {
             "request": request,
             "link": link.json(),
-            "lnurl": link.lnurl(req=request),
+            "lnurl": lnurl,
             "unique": True,
         },
     )
@@ -50,7 +60,15 @@ async def img(request: Request, link_id):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
         )
-    qr = pyqrcode.create(link.lnurl(request))
+    try:
+        lnurl = create_lnurl(link, request)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
+    qr = pyqrcode.create(lnurl)
     stream = BytesIO()
     qr.svg(stream, scale=3)
     stream.seek(0)
@@ -94,7 +112,14 @@ async def print_qr(request: Request, link_id):
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
             )
-        links.append(str(linkk.lnurl(request)))
+        try:
+            lnurl = create_lnurl(linkk, request)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=str(exc),
+            ) from exc
+        links.append(str(lnurl))
         count = count + 1
     page_link = list(chunks(links, 2))
     linked = list(chunks(page_link, 5))
@@ -141,7 +166,14 @@ async def csv(request: Request, link_id):
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
             )
-        links.append(str(linkk.lnurl(request)))
+        try:
+            lnurl = create_lnurl(linkk, request)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=str(exc),
+            ) from exc
+        links.append(str(lnurl))
         count = count + 1
     page_link = list(chunks(links, 2))
     linked = list(chunks(page_link, 5))

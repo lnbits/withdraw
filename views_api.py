@@ -15,6 +15,7 @@ from .crud import (
     get_withdraw_links,
     update_withdraw_link,
 )
+from .helpers import create_lnurl
 from .models import CreateWithdrawData, HashCheck
 
 withdraw_ext_api = APIRouter(prefix="/api/v1")
@@ -22,7 +23,7 @@ withdraw_ext_api = APIRouter(prefix="/api/v1")
 
 @withdraw_ext_api.get("/links", status_code=HTTPStatus.OK)
 async def api_links(
-    req: Request,
+    request: Request,
     key_info: WalletTypeInfo = Depends(require_invoice_key),
     all_wallets: bool = Query(False),
     offset: int = Query(0),
@@ -35,8 +36,20 @@ async def api_links(
         wallet_ids = user.wallet_ids if user else []
 
     links, total = await get_withdraw_links(wallet_ids, limit, offset)
+
+    data = []
+    for link in links:
+        try:
+            lnurl = create_lnurl(link, request)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=str(exc),
+            ) from exc
+        data.append({**link.dict(), **{"lnurl": lnurl}})
+
     return {
-        "data": [{**link.dict(), **{"lnurl": link.lnurl(req)}} for link in links],
+        "data": data,
         "total": total,
     }
 
@@ -58,13 +71,20 @@ async def api_link_retrieve(
         raise HTTPException(
             detail="Not your withdraw link.", status_code=HTTPStatus.FORBIDDEN
         )
-    return {**link.dict(), **{"lnurl": link.lnurl(request)}}
+    try:
+        lnurl = create_lnurl(link, request)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+    return {**link.dict(), **{"lnurl": lnurl}}
 
 
 @withdraw_ext_api.post("/links", status_code=HTTPStatus.CREATED)
 @withdraw_ext_api.put("/links/{link_id}", status_code=HTTPStatus.OK)
 async def api_link_create_or_update(
-    req: Request,
+    request: Request,
     data: CreateWithdrawData,
     link_id: Optional[str] = None,
     key_info: WalletTypeInfo = Depends(require_admin_key),
@@ -141,7 +161,15 @@ async def api_link_create_or_update(
     else:
         link = await create_withdraw_link(wallet_id=key_info.wallet.id, data=data)
 
-    return {**link.dict(), **{"lnurl": link.lnurl(req)}}
+    try:
+        lnurl = create_lnurl(link, request)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
+    return {**link.dict(), **{"lnurl": lnurl}}
 
 
 @withdraw_ext_api.delete("/links/{link_id}", status_code=HTTPStatus.OK)
