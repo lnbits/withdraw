@@ -56,16 +56,11 @@ async def api_lnurl_response(
 
     callback_url = parse_obj_as(CallbackUrl, url)
     return LnurlWithdrawResponse(
-        # tag="withdrawRequest",
         callback=callback_url,
         k1=link.k1,
         minWithdrawable=MilliSatoshi(link.min_withdrawable * 1000),
         maxWithdrawable=MilliSatoshi(link.max_withdrawable * 1000),
         defaultDescription=link.title,
-        # TODO webhook are off spec in the response
-        #     "webhook_url": link.webhook_url,
-        #     "webhook_headers": link.webhook_headers,
-        #     "webhook_body": link.webhook_body,
     )
 
 
