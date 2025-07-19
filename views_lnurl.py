@@ -17,6 +17,7 @@ from lnurl import (
     MilliSatoshi,
 )
 from loguru import logger
+from pydantic import parse_obj_as
 
 from .crud import (
     create_hash_check,
@@ -53,24 +54,18 @@ async def api_lnurl_response(
         request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
     )
 
-    # return {
-    #     "tag": "withdrawRequest",
-    #     "callback": url,
-    #     "k1": link.k1,
-    #     "minWithdrawable": link.min_withdrawable * 1000,
-    #     "maxWithdrawable": link.max_withdrawable * 1000,
-    #     "defaultDescription": link.title,
-    #     "webhook_url": link.webhook_url,
-    #     "webhook_headers": link.webhook_headers,
-    #     "webhook_body": link.webhook_body,
-    # }
+    callback_url = parse_obj_as(CallbackUrl, url)
     return LnurlWithdrawResponse(
-        tag="withdrawRequest",
-        callback=CallbackUrl(url),
+        # tag="withdrawRequest",
+        callback=callback_url,
         k1=link.k1,
         minWithdrawable=MilliSatoshi(link.min_withdrawable * 1000),
         maxWithdrawable=MilliSatoshi(link.max_withdrawable * 1000),
         defaultDescription=link.title,
+        # TODO webhook are off spec in the response
+        #     "webhook_url": link.webhook_url,
+        #     "webhook_headers": link.webhook_headers,
+        #     "webhook_body": link.webhook_body,
     )
 
 
@@ -209,15 +204,13 @@ async def api_lnurl_multi_response(
         return LnurlErrorResponse(reason="Withdraw is spent.")
 
     if not check_unique_link(link, id_unique_hash):
-        return LnurlErrorResponse(
-            reason="id_unique_hash not found for this link."
-        )
+        return LnurlErrorResponse(reason="id_unique_hash not found for this link.")
 
     url = request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
 
+    callback_url = parse_obj_as(CallbackUrl, f"{url!s}?id_unique_hash={id_unique_hash}")
     return LnurlWithdrawResponse(
-        tag="withdrawRequest",
-        callback=CallbackUrl(f"{url!s}?id_unique_hash={id_unique_hash}"),
+        callback=callback_url,
         k1=link.k1,
         minWithdrawable=MilliSatoshi(link.min_withdrawable * 1000),
         maxWithdrawable=MilliSatoshi(link.max_withdrawable * 1000),
