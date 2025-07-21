@@ -1,18 +1,23 @@
 import json
 from datetime import datetime
-from http import HTTPStatus
-from typing import Callable, Optional
-from urllib.parse import urlparse
+from typing import Optional
 
 import httpx
 import shortuuid
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from fastapi.routing import APIRoute
 from lnbits.core.crud import update_payment
 from lnbits.core.models import Payment
 from lnbits.core.services import pay_invoice
+from lnurl import (
+    CallbackUrl,
+    LnurlErrorResponse,
+    LnurlSuccessResponse,
+    LnurlWithdrawResponse,
+    MilliSatoshi,
+)
 from loguru import logger
+from pydantic import parse_obj_as
 
 from .crud import (
     create_hash_check,
@@ -23,28 +28,7 @@ from .crud import (
 )
 from .models import WithdrawLink
 
-
-class LNURLErrorResponseHandler(APIRoute):
-    def get_route_handler(self) -> Callable:
-        original_route_handler = super().get_route_handler()
-
-        async def custom_route_handler(request: Request) -> Response:
-            try:
-                response = await original_route_handler(request)
-                return response
-            except HTTPException as exc:
-                logger.debug(f"HTTPException: {exc}")
-                response = JSONResponse(
-                    status_code=200,
-                    content={"status": "ERROR", "reason": f"{exc.detail}"},
-                )
-                return response
-
-        return custom_route_handler
-
-
 withdraw_ext_lnurl = APIRouter(prefix="/api/v1/lnurl")
-withdraw_ext_lnurl.route_class = LNURLErrorResponseHandler
 
 
 @withdraw_ext_lnurl.get(
@@ -52,45 +36,32 @@ withdraw_ext_lnurl.route_class = LNURLErrorResponseHandler
     response_class=JSONResponse,
     name="withdraw.api_lnurl_response",
 )
-async def api_lnurl_response(request: Request, unique_hash: str):
+async def api_lnurl_response(
+    request: Request, unique_hash: str
+) -> LnurlWithdrawResponse | LnurlErrorResponse:
     link = await get_withdraw_link_by_hash(unique_hash)
 
     if not link:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
-        )
+        return LnurlErrorResponse(reason="Withdraw link does not exist.")
 
     if link.is_spent:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Withdraw is spent."
-        )
+        return LnurlErrorResponse(reason="Withdraw is spent.")
 
     if link.is_unique:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail="This link requires an id_unique_hash.",
-        )
+        return LnurlErrorResponse(reason="This link requires an id_unique_hash.")
 
     url = str(
         request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
     )
 
-    # Check if url is .onion and change to http
-    if urlparse(url).netloc.endswith(".onion"):
-        # change url string scheme to http
-        url = url.replace("https://", "http://")
-
-    return {
-        "tag": "withdrawRequest",
-        "callback": url,
-        "k1": link.k1,
-        "minWithdrawable": link.min_withdrawable * 1000,
-        "maxWithdrawable": link.max_withdrawable * 1000,
-        "defaultDescription": link.title,
-        "webhook_url": link.webhook_url,
-        "webhook_headers": link.webhook_headers,
-        "webhook_body": link.webhook_body,
-    }
+    callback_url = parse_obj_as(CallbackUrl, url)
+    return LnurlWithdrawResponse(
+        callback=callback_url,
+        k1=link.k1,
+        minWithdrawable=MilliSatoshi(link.min_withdrawable * 1000),
+        maxWithdrawable=MilliSatoshi(link.max_withdrawable * 1000),
+        defaultDescription=link.title,
+    )
 
 
 @withdraw_ext_lnurl.get(
@@ -115,52 +86,40 @@ async def api_lnurl_callback(
     k1: str,
     pr: str,
     id_unique_hash: Optional[str] = None,
-):
+) -> LnurlErrorResponse | LnurlSuccessResponse:
 
     link = await get_withdraw_link_by_hash(unique_hash)
     if not link:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="withdraw not found."
-        )
+        return LnurlErrorResponse(reason="withdraw link not found.")
 
     if link.is_spent:
-        raise HTTPException(
-            status_code=HTTPStatus.METHOD_NOT_ALLOWED, detail="withdraw is spent."
-        )
+        return LnurlErrorResponse(reason="withdraw is spent.")
 
     if link.k1 != k1:
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="k1 is wrong.")
+        return LnurlErrorResponse(reason="k1 is wrong.")
 
     now = int(datetime.now().timestamp())
 
     if now < link.open_time:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail=f"wait link open_time {link.open_time - now} seconds.",
+        return LnurlErrorResponse(
+            reason=f"wait link open_time {link.open_time - now} seconds."
         )
 
     if not id_unique_hash and link.is_unique:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail="id_unique_hash is required for this link.",
-        )
+        return LnurlErrorResponse(reason="id_unique_hash is required for this link.")
 
     if id_unique_hash:
         if check_unique_link(link, id_unique_hash):
             await remove_unique_withdraw_link(link, id_unique_hash)
         else:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND, detail="withdraw not found."
-            )
+            return LnurlErrorResponse(reason="id_unique_hash not found.")
 
     # Create a record with the id_unique_hash or unique_hash, if it already exists,
     # raise an exception thus preventing the same LNURL from being processed twice.
     try:
         await create_hash_check(id_unique_hash or unique_hash, k1)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="LNURL already being processed."
-        ) from exc
+    except Exception:
+        return LnurlErrorResponse(reason="LNURL already being processed.")
 
     try:
         payment = await pay_invoice(
@@ -177,13 +136,11 @@ async def api_lnurl_callback(
 
         if link.webhook_url:
             await dispatch_webhook(link, payment, pr)
-        return {"status": "OK"}
+        return LnurlSuccessResponse()
     except Exception as exc:
         # If payment fails, delete the hash stored so another attempt can be made.
         await delete_hash_check(id_unique_hash or unique_hash)
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {exc!s}"
-        ) from exc
+        return LnurlErrorResponse(reason=f"withdraw not working. {exc!s}")
 
 
 def check_unique_link(link: WithdrawLink, unique_hash: str) -> bool:
@@ -232,38 +189,25 @@ async def dispatch_webhook(
 )
 async def api_lnurl_multi_response(
     request: Request, unique_hash: str, id_unique_hash: str
-):
+) -> LnurlWithdrawResponse | LnurlErrorResponse:
     link = await get_withdraw_link_by_hash(unique_hash)
 
     if not link:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="LNURL-withdraw not found."
-        )
+        return LnurlErrorResponse(reason="Withdraw link does not exist.")
 
     if link.is_spent:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Withdraw is spent."
-        )
+        return LnurlErrorResponse(reason="Withdraw is spent.")
 
     if not check_unique_link(link, id_unique_hash):
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="LNURL-withdraw not found."
-        )
+        return LnurlErrorResponse(reason="id_unique_hash not found for this link.")
 
-    url = str(
-        request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
+    url = request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
+
+    callback_url = parse_obj_as(CallbackUrl, f"{url!s}?id_unique_hash={id_unique_hash}")
+    return LnurlWithdrawResponse(
+        callback=callback_url,
+        k1=link.k1,
+        minWithdrawable=MilliSatoshi(link.min_withdrawable * 1000),
+        maxWithdrawable=MilliSatoshi(link.max_withdrawable * 1000),
+        defaultDescription=link.title,
     )
-
-    # Check if url is .onion and change to http
-    if urlparse(url).netloc.endswith(".onion"):
-        # change url string scheme to http
-        url = url.replace("https://", "http://")
-
-    return {
-        "tag": "withdrawRequest",
-        "callback": f"{url}?id_unique_hash={id_unique_hash}",
-        "k1": link.k1,
-        "minWithdrawable": link.min_withdrawable * 1000,
-        "maxWithdrawable": link.max_withdrawable * 1000,
-        "defaultDescription": link.title,
-    }
