@@ -4,24 +4,26 @@
     <q-card class="q-pa-lg">
       <q-card-section class="q-pa-none">
         <div class="text-center">
-          {% if link.is_spent %}
-          <q-badge color="red" class="q-mb-md">Withdraw is spent.</q-badge>
-          {% endif %}
-          <a class="text-secondary" href="lightning:{{ lnurl }}">
-            <lnbits-qrcode
-              :value="this.here + '/?lightning={{lnurl }}'"
-            ></lnbits-qrcode>
+          <q-badge v-if="spent" color="red" class="q-mb-md"
+            >Withdraw is spent.</q-badge
+          >
+          <a v-else class="text-secondary" :href="link">
+            <lnbits-qrcode-lnurl
+              prefix="lnurlw"
+              :url="url"
+              @update:lnurl="v => lnurl = v"
+            ></lnbits-qrcode-lnurl>
           </a>
         </div>
         <div class="row q-mt-lg q-gutter-sm">
-          <q-btn outline color="grey" @click="copyText('{{ lnurl }}')"
+          <q-btn outline color="grey" @click="copyText(lnurl)"
             >Copy LNURL</q-btn
           >
           <q-btn
             outline
             color="grey"
             icon="nfc"
-            @click="writeNfcTag(' {{ lnurl }} ')"
+            @click="writeNfcTag(lnurl)"
             :disable="nfcTagWriting"
           ></q-btn>
         </div>
@@ -52,7 +54,9 @@
     mixins: [window.windowMixin],
     data() {
       return {
-        here: location.protocol + '//' + location.host,
+        spent: {{ 'true' if spent else 'false' }},
+        url: `${window.location.origin}/withdraw/api/v1/lnurl/{{ unique_hash }}`,
+        lnurl: '',
         nfcTagWriting: false
       }
     }

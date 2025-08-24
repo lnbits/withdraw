@@ -46,3 +46,8 @@ class WithdrawLink(BaseModel):
 class HashCheck(BaseModel):
     hash: bool
     lnurl: bool
+
+
+class PaginatedWithdraws(BaseModel):
+    data: list[WithdrawLink]
+    total: int

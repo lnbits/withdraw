@@ -1,17 +1,6 @@
-const locationPath = [
-  window.location.protocol,
-  '//',
-  window.location.host,
-  window.location.pathname
-].join('')
-
 const mapWithdrawLink = function (obj) {
   obj._data = _.clone(obj)
-  obj.min_fsat = new Intl.NumberFormat(LOCALE).format(obj.min_withdrawable)
-  obj.max_fsat = new Intl.NumberFormat(LOCALE).format(obj.max_withdrawable)
   obj.uses_left = obj.uses - obj.used
-  obj.print_url = [locationPath, 'print/', obj.id].join('')
-  obj.withdraw_url = [locationPath, obj.id].join('')
   obj._data.use_custom = Boolean(obj.custom_url)
   return obj
 }
@@ -25,6 +14,7 @@ window.app = Vue.createApp({
     return {
       checker: null,
       withdrawLinks: [],
+      lnurl: '',
       withdrawLinksTable: {
         columns: [
           {name: 'title', align: 'left', label: 'Title', field: 'title'},
@@ -34,7 +24,7 @@ window.app = Vue.createApp({
             label: 'Created At',
             field: 'created_at',
             sortable: true,
-            format: function (val, row) {
+            format: function (val) {
               return new Date(val).toLocaleString()
             }
           },
@@ -47,7 +37,7 @@ window.app = Vue.createApp({
           {
             name: 'uses',
             align: 'right',
-            label: 'Created',
+            label: 'Uses',
             field: 'uses'
           },
           {
@@ -56,8 +46,15 @@ window.app = Vue.createApp({
             label: 'Uses left',
             field: 'uses_left'
           },
-          {name: 'min', align: 'right', label: 'Min (sat)', field: 'min_fsat'},
-          {name: 'max', align: 'right', label: 'Max (sat)', field: 'max_fsat'}
+          {
+            name: 'max_withdrawable',
+            align: 'right',
+            label: 'Max (sat)',
+            field: 'max_withdrawable',
+            format: v => {
+              return new Intl.NumberFormat(LOCALE).format(v)
+            }
+          }
         ],
         pagination: {
           page: 1,
@@ -141,11 +138,9 @@ window.app = Vue.createApp({
     },
     openQrCodeDialog(linkId) {
       const link = _.findWhere(this.withdrawLinks, {id: linkId})
-
       this.qrCodeDialog.data = _.clone(link)
-      this.qrCodeDialog.data.url =
-        window.location.protocol + '//' + window.location.host
       this.qrCodeDialog.show = true
+      this.activeUrl = `${window.location.origin}/withdraw/api/v1/lnurl/${link.unique_hash}`
     },
     openUpdateDialog(linkId) {
       let link = _.findWhere(this.withdrawLinks, {id: linkId})
@@ -258,7 +253,7 @@ window.app = Vue.createApp({
               '/withdraw/api/v1/links/' + linkId,
               _.findWhere(this.g.user.wallets, {id: link.wallet}).adminkey
             )
-            .then(response => {
+            .then(() => {
               this.withdrawLinks = _.reject(this.withdrawLinks, function (obj) {
                 return obj.id === linkId
               })
