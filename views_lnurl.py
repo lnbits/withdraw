@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-from typing import Optional
 
 import httpx
 import shortuuid
@@ -85,7 +84,7 @@ async def api_lnurl_callback(
     unique_hash: str,
     k1: str,
     pr: str,
-    id_unique_hash: Optional[str] = None,
+    id_unique_hash: str | None = None,
 ) -> LnurlErrorResponse | LnurlSuccessResponse:
 
     link = await get_withdraw_link_by_hash(unique_hash)
