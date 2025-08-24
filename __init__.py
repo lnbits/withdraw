@@ -17,4 +17,4 @@ withdraw_ext.include_router(withdraw_ext_generic)
 withdraw_ext.include_router(withdraw_ext_api)
 withdraw_ext.include_router(withdraw_ext_lnurl)
 
-__all__ = ["withdraw_ext", "withdraw_static_files", "db"]
+__all__ = ["db", "withdraw_ext", "withdraw_static_files"]

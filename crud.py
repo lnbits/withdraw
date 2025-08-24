@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 import shortuuid
 from lnbits.db import Database
@@ -39,7 +38,7 @@ async def create_withdraw_link(
     return withdraw_link
 
 
-async def get_withdraw_link(link_id: str, num=0) -> Optional[WithdrawLink]:
+async def get_withdraw_link(link_id: str, num=0) -> WithdrawLink | None:
     link = await db.fetchone(
         "SELECT * FROM withdraw.withdraw_link WHERE id = :id",
         {"id": link_id},
@@ -52,7 +51,7 @@ async def get_withdraw_link(link_id: str, num=0) -> Optional[WithdrawLink]:
     return link
 
 
-async def get_withdraw_link_by_hash(unique_hash: str, num=0) -> Optional[WithdrawLink]:
+async def get_withdraw_link_by_hash(unique_hash: str, num=0) -> WithdrawLink | None:
     link = await db.fetchone(
         "SELECT * FROM withdraw.withdraw_link WHERE unique_hash = :hash",
         {"hash": unique_hash},

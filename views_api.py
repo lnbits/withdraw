@@ -1,6 +1,5 @@
 import json
 from http import HTTPStatus
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from lnbits.core.crud import get_user
@@ -86,7 +85,7 @@ async def api_link_retrieve(
 async def api_link_create_or_update(
     request: Request,
     data: CreateWithdrawData,
-    link_id: Optional[str] = None,
+    link_id: str | None = None,
     key_info: WalletTypeInfo = Depends(require_admin_key),
 ):
     if data.uses > 250:

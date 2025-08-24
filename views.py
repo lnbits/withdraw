@@ -1,9 +1,7 @@
 from http import HTTPStatus
-from io import BytesIO
 
-import pyqrcode
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
 from lnbits.helpers import template_renderer
@@ -49,40 +47,6 @@ async def display(request: Request, link_id):
             "link": link.json(),
             "lnurl": lnurl,
             "unique": True,
-        },
-    )
-
-
-@withdraw_ext_generic.get("/img/{link_id}", response_class=StreamingResponse)
-async def img(request: Request, link_id):
-    link = await get_withdraw_link(link_id, 0)
-    if not link:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
-        )
-    try:
-        lnurl = create_lnurl(link, request)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=str(exc),
-        ) from exc
-
-    qr = pyqrcode.create(lnurl)
-    stream = BytesIO()
-    qr.svg(stream, scale=3)
-    stream.seek(0)
-
-    async def _generator(stream: BytesIO):
-        yield stream.getvalue()
-
-    return StreamingResponse(
-        _generator(stream),
-        headers={
-            "Content-Type": "image/svg+xml",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
         },
     )
 
@@ -148,8 +112,6 @@ async def csv(request: Request, link_id):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
         )
-        # response.status_code = HTTPStatus.NOT_FOUND
-        # return "Withdraw link does not exist."
 
     if link.uses == 0:
 
