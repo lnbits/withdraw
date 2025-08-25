@@ -1,7 +1,8 @@
+import io
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
 from lnbits.helpers import template_renderer
@@ -32,21 +33,12 @@ async def display(request: Request, link_id):
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
         )
 
-    try:
-        lnurl = create_lnurl(link, request)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=str(exc),
-        ) from exc
-
     return withdraw_renderer().TemplateResponse(
         "withdraw/display.html",
         {
             "request": request,
-            "link": link.json(),
-            "lnurl": lnurl,
-            "unique": True,
+            "spent": link.is_spent,
+            "unique_hash": link.unique_hash,
         },
     )
 
@@ -58,8 +50,6 @@ async def print_qr(request: Request, link_id):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
         )
-        # response.status_code = HTTPStatus.NOT_FOUND
-        # return "Withdraw link does not exist."
 
     if link.uses == 0:
 
@@ -83,7 +73,7 @@ async def print_qr(request: Request, link_id):
                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
                 detail=str(exc),
             ) from exc
-        links.append(str(lnurl))
+        links.append(str(lnurl.bech32))
         count = count + 1
     page_link = list(chunks(links, 2))
     linked = list(chunks(page_link, 5))
@@ -114,14 +104,12 @@ async def csv(request: Request, link_id):
         )
 
     if link.uses == 0:
-
-        return withdraw_renderer().TemplateResponse(
-            "withdraw/csv.html",
-            {"request": request, "link": link.json(), "unique": False},
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Withdraw is spent."
         )
-    links = []
-    count = 0
 
+    buffer = io.StringIO()
+    count = 0
     for _ in link.usescsv.split(","):
         linkk = await get_withdraw_link(link_id, count)
         if not linkk:
@@ -135,11 +123,16 @@ async def csv(request: Request, link_id):
                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
                 detail=str(exc),
             ) from exc
-        links.append(str(lnurl))
-        count = count + 1
-    page_link = list(chunks(links, 2))
-    linked = list(chunks(page_link, 5))
+        buffer.write(f"{lnurl.bech32!s}\n")
+        count += 1
 
-    return withdraw_renderer().TemplateResponse(
-        "withdraw/csv.html", {"request": request, "link": linked, "unique": True}
+    # Move buffer cursor to the beginning
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=withdraw-links-{link_id}.csv"
+        },
     )

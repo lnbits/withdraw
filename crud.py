@@ -4,7 +4,7 @@ import shortuuid
 from lnbits.db import Database
 from lnbits.helpers import urlsafe_short_hash
 
-from .models import CreateWithdrawData, HashCheck, WithdrawLink
+from .models import CreateWithdrawData, HashCheck, PaginatedWithdraws, WithdrawLink
 
 db = Database("ext_withdraw")
 
@@ -66,7 +66,7 @@ async def get_withdraw_link_by_hash(unique_hash: str, num=0) -> WithdrawLink | N
 
 async def get_withdraw_links(
     wallet_ids: list[str], limit: int, offset: int
-) -> tuple[list[WithdrawLink], int]:
+) -> PaginatedWithdraws:
     q = ",".join([f"'{w}'" for w in wallet_ids])
 
     query_str = f"""
@@ -85,16 +85,15 @@ async def get_withdraw_links(
         query_params,
         WithdrawLink,
     )
-
     result = await db.execute(
         f"""
         SELECT COUNT(*) as total FROM withdraw.withdraw_link
         WHERE wallet IN ({q})
         """
     )
-    total = result.mappings().first()
+    result2 = result.mappings().first()
 
-    return links, total.total
+    return PaginatedWithdraws(data=links, total=int(result2.total))
 
 
 async def remove_unique_withdraw_link(link: WithdrawLink, unique_hash: str) -> None:

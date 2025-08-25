@@ -1,9 +1,9 @@
 import json
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from lnbits.core.crud import get_user
-from lnbits.core.models import WalletTypeInfo
+from lnbits.core.models import SimpleStatus, WalletTypeInfo
 from lnbits.decorators import require_admin_key, require_invoice_key
 
 from .crud import (
@@ -14,51 +14,31 @@ from .crud import (
     get_withdraw_links,
     update_withdraw_link,
 )
-from .helpers import create_lnurl
-from .models import CreateWithdrawData, HashCheck
+from .models import CreateWithdrawData, HashCheck, PaginatedWithdraws, WithdrawLink
 
 withdraw_ext_api = APIRouter(prefix="/api/v1")
 
 
 @withdraw_ext_api.get("/links", status_code=HTTPStatus.OK)
 async def api_links(
-    request: Request,
     key_info: WalletTypeInfo = Depends(require_invoice_key),
     all_wallets: bool = Query(False),
     offset: int = Query(0),
     limit: int = Query(0),
-):
+) -> PaginatedWithdraws:
     wallet_ids = [key_info.wallet.id]
 
     if all_wallets:
         user = await get_user(key_info.wallet.user)
         wallet_ids = user.wallet_ids if user else []
 
-    links, total = await get_withdraw_links(wallet_ids, limit, offset)
-
-    data = []
-    for link in links:
-        try:
-            lnurl = create_lnurl(link, request)
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                detail=str(exc),
-            ) from exc
-        data.append({**link.dict(), **{"lnurl": lnurl}})
-
-    return {
-        "data": data,
-        "total": total,
-    }
+    return await get_withdraw_links(wallet_ids, limit, offset)
 
 
 @withdraw_ext_api.get("/links/{link_id}", status_code=HTTPStatus.OK)
 async def api_link_retrieve(
-    link_id: str,
-    request: Request,
-    key_info: WalletTypeInfo = Depends(require_invoice_key),
-):
+    link_id: str, key_info: WalletTypeInfo = Depends(require_invoice_key)
+) -> WithdrawLink:
     link = await get_withdraw_link(link_id, 0)
 
     if not link:
@@ -70,24 +50,16 @@ async def api_link_retrieve(
         raise HTTPException(
             detail="Not your withdraw link.", status_code=HTTPStatus.FORBIDDEN
         )
-    try:
-        lnurl = create_lnurl(link, request)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=str(exc),
-        ) from exc
-    return {**link.dict(), **{"lnurl": lnurl}}
+    return link
 
 
 @withdraw_ext_api.post("/links", status_code=HTTPStatus.CREATED)
-@withdraw_ext_api.put("/links/{link_id}", status_code=HTTPStatus.OK)
+@withdraw_ext_api.put("/links/{link_id}")
 async def api_link_create_or_update(
-    request: Request,
     data: CreateWithdrawData,
     link_id: str | None = None,
     key_info: WalletTypeInfo = Depends(require_admin_key),
-):
+) -> WithdrawLink:
     if data.uses > 250:
         raise HTTPException(detail="250 uses max.", status_code=HTTPStatus.BAD_REQUEST)
 
@@ -160,21 +132,13 @@ async def api_link_create_or_update(
     else:
         link = await create_withdraw_link(wallet_id=key_info.wallet.id, data=data)
 
-    try:
-        lnurl = create_lnurl(link, request)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=str(exc),
-        ) from exc
-
-    return {**link.dict(), **{"lnurl": lnurl}}
+    return link
 
 
-@withdraw_ext_api.delete("/links/{link_id}", status_code=HTTPStatus.OK)
+@withdraw_ext_api.delete("/links/{link_id}")
 async def api_link_delete(
     link_id: str, key_info: WalletTypeInfo = Depends(require_admin_key)
-):
+) -> SimpleStatus:
     link = await get_withdraw_link(link_id)
 
     if not link:
@@ -188,7 +152,7 @@ async def api_link_delete(
         )
 
     await delete_withdraw_link(link_id)
-    return {"success": True}
+    return SimpleStatus(success=True, message="Withdraw link deleted.")
 
 
 @withdraw_ext_api.get(
