@@ -2,14 +2,14 @@ import json
 from datetime import datetime
 
 import httpx
-import shortuuid
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
 from lnbits.core.crud import update_payment
 from lnbits.core.models import Payment
 from lnbits.core.services import pay_invoice
+from lnbits.exceptions import PaymentError
 from lnurl import (
     CallbackUrl,
+    InvalidLnurl,
     LnurlErrorResponse,
     LnurlSuccessResponse,
     LnurlWithdrawResponse,
@@ -18,140 +18,102 @@ from lnurl import (
 from loguru import logger
 from pydantic import parse_obj_as
 
-from .crud import (
-    create_hash_check,
-    delete_hash_check,
-    get_withdraw_link_by_hash,
-    increment_withdraw_link,
-    remove_unique_withdraw_link,
-)
+from .crud import get_withdraw_link, get_withdraw_link_by_k1, update_withdraw_link
 from .models import WithdrawLink
 
 withdraw_ext_lnurl = APIRouter(prefix="/api/v1/lnurl")
 
 
-@withdraw_ext_lnurl.get(
-    "/{unique_hash}",
-    response_class=JSONResponse,
-    name="withdraw.api_lnurl_response",
-)
+@withdraw_ext_lnurl.get("/{id_or_k1}")
 async def api_lnurl_response(
-    request: Request, unique_hash: str
+    request: Request, id_or_k1: str
 ) -> LnurlWithdrawResponse | LnurlErrorResponse:
-    link = await get_withdraw_link_by_hash(unique_hash)
+    link = await get_withdraw_link(id_or_k1)
 
-    if not link:
-        return LnurlErrorResponse(reason="Withdraw link does not exist.")
+    # static links are identified by their id
+    if link:
+        if not link.is_static:
+            return LnurlErrorResponse(
+                reason="Withdraw link is not static. Only use 'id' for static links."
+            )
+        secret = link.secrets.next_secret
+        if not secret:
+            return LnurlErrorResponse(reason="Withdraw is spent.")
 
-    if link.is_spent:
-        return LnurlErrorResponse(reason="Withdraw is spent.")
+    # non-static links are identified by their k1
+    else:
+        link = await get_withdraw_link_by_k1(id_or_k1)
+        if not link:
+            return LnurlErrorResponse(reason="Withdraw link does not exist.")
+        secret = link.secrets.get_secret(id_or_k1)
+        if not secret:
+            return LnurlErrorResponse(reason="Invalid k1.")
+        if secret.used:
+            return LnurlErrorResponse(reason="Withdraw is spent.")
 
-    if link.is_unique:
-        return LnurlErrorResponse(reason="This link requires an id_unique_hash.")
+    url = request.url_for("withdraw.lnurl_callback")
+    try:
+        callback_url = parse_obj_as(CallbackUrl, str(url))
+    except InvalidLnurl:
+        return LnurlErrorResponse(reason=f"Invalid callback URL. {url!s}")
 
-    url = str(
-        request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
-    )
-
-    callback_url = parse_obj_as(CallbackUrl, url)
     return LnurlWithdrawResponse(
         callback=callback_url,
-        k1=link.k1,
+        k1=secret.k1,
         minWithdrawable=MilliSatoshi(link.min_withdrawable * 1000),
         maxWithdrawable=MilliSatoshi(link.max_withdrawable * 1000),
         defaultDescription=link.title,
     )
 
 
-@withdraw_ext_lnurl.get(
-    "/cb/{unique_hash}",
-    name="withdraw.api_lnurl_callback",
-    summary="lnurl withdraw callback",
-    description="""
-        This endpoints allows you to put unique_hash, k1
-        and a payment_request to get your payment_request paid.
-    """,
-    response_class=JSONResponse,
-    response_description="JSON with status",
-    responses={
-        200: {"description": "status: OK"},
-        400: {"description": "k1 is wrong or link open time or withdraw not working."},
-        404: {"description": "withdraw link not found."},
-        405: {"description": "withdraw link is spent."},
-    },
-)
+@withdraw_ext_lnurl.get("/cb", name="withdraw.lnurl_callback")
 async def api_lnurl_callback(
-    unique_hash: str,
-    k1: str,
-    pr: str,
-    id_unique_hash: str | None = None,
+    k1: str, pr: str
 ) -> LnurlErrorResponse | LnurlSuccessResponse:
 
-    link = await get_withdraw_link_by_hash(unique_hash)
+    link = await get_withdraw_link_by_k1(k1)
     if not link:
-        return LnurlErrorResponse(reason="withdraw link not found.")
-
-    if link.is_spent:
-        return LnurlErrorResponse(reason="withdraw is spent.")
-
-    if link.k1 != k1:
-        return LnurlErrorResponse(reason="k1 is wrong.")
+        return LnurlErrorResponse(reason="Invalid k1.")
 
     now = int(datetime.now().timestamp())
-
     if now < link.open_time:
         return LnurlErrorResponse(
             reason=f"wait link open_time {link.open_time - now} seconds."
         )
 
-    if not id_unique_hash and link.is_unique:
-        return LnurlErrorResponse(reason="id_unique_hash is required for this link.")
+    secret = link.secrets.get_secret(k1)
+    if not secret:
+        return LnurlErrorResponse(reason="Invalid k1.")
 
-    if id_unique_hash:
-        if check_unique_link(link, id_unique_hash):
-            await remove_unique_withdraw_link(link, id_unique_hash)
-        else:
-            return LnurlErrorResponse(reason="id_unique_hash not found.")
+    if secret.used:
+        return LnurlErrorResponse(reason="Withdraw is spent.")
 
-    # Create a record with the id_unique_hash or unique_hash, if it already exists,
-    # raise an exception thus preventing the same LNURL from being processed twice.
-    try:
-        await create_hash_check(id_unique_hash or unique_hash, k1)
-    except Exception:
-        return LnurlErrorResponse(reason="LNURL already being processed.")
+    # IMPORTANT: update the link in the db before paying the invoice
+    # so that concurrent requests can't use the same secret
+    link.secrets.use_secret(k1)
+    await update_withdraw_link(link)
 
     try:
         payment = await pay_invoice(
             wallet_id=link.wallet,
             payment_request=pr,
             max_sat=link.max_withdrawable,
-            extra={"tag": "withdraw", "withdrawal_link_id": link.id},
+            extra={"tag": "withdraw", "withdraw_id": link.id},
         )
-        await increment_withdraw_link(link)
-        # If the payment succeeds, delete the record with the unique_hash.
-        # TODO: we delete this now: "If it has unique_hash, do not delete to prevent
-        # the same LNURL from being processed twice."
-        await delete_hash_check(id_unique_hash or unique_hash)
+    except PaymentError as exc:
+        return LnurlErrorResponse(reason=f"Payment error: {exc.message}")
 
-        if link.webhook_url:
-            await dispatch_webhook(link, payment, pr)
-        return LnurlSuccessResponse()
-    except Exception as exc:
-        # If payment fails, delete the hash stored so another attempt can be made.
-        await delete_hash_check(id_unique_hash or unique_hash)
-        return LnurlErrorResponse(reason=f"withdraw not working. {exc!s}")
+    if link.webhook_url:
+        await dispatch_webhook(link, payment, pr)
 
-
-def check_unique_link(link: WithdrawLink, unique_hash: str) -> bool:
-    return any(
-        unique_hash == shortuuid.uuid(name=link.id + link.unique_hash + x.strip())
-        for x in link.usescsv.split(",")
-    )
+    return LnurlSuccessResponse()
 
 
 async def dispatch_webhook(
     link: WithdrawLink, payment: Payment, payment_request: str
 ) -> None:
+    if not link.webhook_url:
+        return
     async with httpx.AsyncClient() as client:
         try:
             r: httpx.Response = await client.post(
@@ -178,35 +140,3 @@ async def dispatch_webhook(
             payment.extra["wh_success"] = False
             payment.extra["wh_message"] = str(exc)
             await update_payment(payment)
-
-
-# FOR LNURLs WHICH ARE UNIQUE
-@withdraw_ext_lnurl.get(
-    "/{unique_hash}/{id_unique_hash}",
-    response_class=JSONResponse,
-    name="withdraw.api_lnurl_multi_response",
-)
-async def api_lnurl_multi_response(
-    request: Request, unique_hash: str, id_unique_hash: str
-) -> LnurlWithdrawResponse | LnurlErrorResponse:
-    link = await get_withdraw_link_by_hash(unique_hash)
-
-    if not link:
-        return LnurlErrorResponse(reason="Withdraw link does not exist.")
-
-    if link.is_spent:
-        return LnurlErrorResponse(reason="Withdraw is spent.")
-
-    if not check_unique_link(link, id_unique_hash):
-        return LnurlErrorResponse(reason="id_unique_hash not found for this link.")
-
-    url = request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
-
-    callback_url = parse_obj_as(CallbackUrl, f"{url!s}?id_unique_hash={id_unique_hash}")
-    return LnurlWithdrawResponse(
-        callback=callback_url,
-        k1=link.k1,
-        minWithdrawable=MilliSatoshi(link.min_withdrawable * 1000),
-        maxWithdrawable=MilliSatoshi(link.max_withdrawable * 1000),
-        defaultDescription=link.title,
-    )

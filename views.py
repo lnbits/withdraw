@@ -26,7 +26,7 @@ async def index(request: Request, user: User = Depends(check_user_exists)):
 
 @withdraw_ext_generic.get("/{link_id}", response_class=HTMLResponse)
 async def display(request: Request, link_id):
-    link = await get_withdraw_link(link_id, 0)
+    link = await get_withdraw_link(link_id)
 
     if not link:
         raise HTTPException(

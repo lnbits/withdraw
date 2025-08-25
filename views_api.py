@@ -1,4 +1,3 @@
-import json
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -9,17 +8,16 @@ from lnbits.decorators import require_admin_key, require_invoice_key
 from .crud import (
     create_withdraw_link,
     delete_withdraw_link,
-    get_hash_check,
     get_withdraw_link,
     get_withdraw_links,
     update_withdraw_link,
 )
-from .models import CreateWithdrawData, HashCheck, PaginatedWithdraws, WithdrawLink
+from .models import CreateWithdrawData, PaginatedWithdraws, WithdrawLink
 
 withdraw_ext_api = APIRouter(prefix="/api/v1")
 
 
-@withdraw_ext_api.get("/links", status_code=HTTPStatus.OK)
+@withdraw_ext_api.get("/links")
 async def api_links(
     key_info: WalletTypeInfo = Depends(require_invoice_key),
     all_wallets: bool = Query(False),
@@ -35,11 +33,11 @@ async def api_links(
     return await get_withdraw_links(wallet_ids, limit, offset)
 
 
-@withdraw_ext_api.get("/links/{link_id}", status_code=HTTPStatus.OK)
+@withdraw_ext_api.get("/links/{link_id}")
 async def api_link_retrieve(
     link_id: str, key_info: WalletTypeInfo = Depends(require_invoice_key)
 ) -> WithdrawLink:
-    link = await get_withdraw_link(link_id, 0)
+    link = await get_withdraw_link(link_id)
 
     if not link:
         raise HTTPException(
@@ -54,85 +52,34 @@ async def api_link_retrieve(
 
 
 @withdraw_ext_api.post("/links", status_code=HTTPStatus.CREATED)
-@withdraw_ext_api.put("/links/{link_id}")
-async def api_link_create_or_update(
+async def api_link_create(
     data: CreateWithdrawData,
-    link_id: str | None = None,
     key_info: WalletTypeInfo = Depends(require_admin_key),
 ) -> WithdrawLink:
-    if data.uses > 250:
-        raise HTTPException(detail="250 uses max.", status_code=HTTPStatus.BAD_REQUEST)
-
-    if data.min_withdrawable < 1:
-        raise HTTPException(
-            detail="Min must be more than 1.", status_code=HTTPStatus.BAD_REQUEST
-        )
-
-    if data.max_withdrawable < data.min_withdrawable:
-        raise HTTPException(
-            detail="`max_withdrawable` needs to be at least `min_withdrawable`.",
-            status_code=HTTPStatus.BAD_REQUEST,
-        )
-
-    if data.webhook_body:
-        try:
-            json.loads(data.webhook_body)
-        except Exception as exc:
-            raise HTTPException(
-                detail="`webhook_body` can not parse JSON.",
-                status_code=HTTPStatus.BAD_REQUEST,
-            ) from exc
-
-    if data.webhook_headers:
-        try:
-            json.loads(data.webhook_headers)
-        except Exception as exc:
-            raise HTTPException(
-                detail="`webhook_headers` can not parse JSON.",
-                status_code=HTTPStatus.BAD_REQUEST,
-            ) from exc
-
-    if link_id:
-        link = await get_withdraw_link(link_id, 0)
-        if not link:
-            raise HTTPException(
-                detail="Withdraw link does not exist.", status_code=HTTPStatus.NOT_FOUND
-            )
-        if link.wallet != key_info.wallet.id:
-            raise HTTPException(
-                detail="Not your withdraw link.", status_code=HTTPStatus.FORBIDDEN
-            )
-
-        if link.uses > data.uses:
-            if data.uses - link.used <= 0:
-                raise HTTPException(
-                    detail="Cannot reduce uses below current used.",
-                    status_code=HTTPStatus.BAD_REQUEST,
-                )
-            numbers = link.usescsv.split(",")
-            link.usescsv = ",".join(numbers[: data.uses - link.used])
-
-        if link.uses < data.uses:
-            numbers = link.usescsv.split(",")
-            if numbers[-1] == "":
-                current_number = int(link.uses)
-                numbers[-1] = str(link.uses)
-            else:
-                current_number = int(numbers[-1])
-            while len(numbers) < (data.uses - link.used):
-                current_number += 1
-                numbers.append(str(current_number))
-            link.usescsv = ",".join(numbers)
-
-        for k, v in data.dict().items():
-            if v is not None:
-                setattr(link, k, v)
-
-        link = await update_withdraw_link(link)
-    else:
-        link = await create_withdraw_link(wallet_id=key_info.wallet.id, data=data)
-
+    link = await create_withdraw_link(data, key_info.wallet.id)
     return link
+
+
+@withdraw_ext_api.put("/links/{link_id}")
+async def api_link_update(
+    link_id: str,
+    data: CreateWithdrawData,
+    key_info: WalletTypeInfo = Depends(require_admin_key),
+) -> WithdrawLink:
+    link = await get_withdraw_link(link_id)
+    if not link:
+        raise HTTPException(
+            detail="Withdraw link does not exist.", status_code=HTTPStatus.NOT_FOUND
+        )
+    if link.wallet != key_info.wallet.id:
+        raise HTTPException(
+            detail="Not your withdraw link.", status_code=HTTPStatus.FORBIDDEN
+        )
+
+    for k, v in data.dict().items():
+        setattr(link, k, v)
+
+    return await update_withdraw_link(link)
 
 
 @withdraw_ext_api.delete("/links/{link_id}")
@@ -153,13 +100,3 @@ async def api_link_delete(
 
     await delete_withdraw_link(link_id)
     return SimpleStatus(success=True, message="Withdraw link deleted.")
-
-
-@withdraw_ext_api.get(
-    "/links/{the_hash}/{lnurl_id}",
-    status_code=HTTPStatus.OK,
-    dependencies=[Depends(require_invoice_key)],
-)
-async def api_hash_retrieve(the_hash, lnurl_id) -> HashCheck:
-    hash_check = await get_hash_check(the_hash, lnurl_id)
-    return hash_check
