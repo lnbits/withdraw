@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, validator
 class CreateWithdrawData(BaseModel):
     title: str = Query(...)
     min_withdrawable: int = Query(..., ge=1)
-    max_withdrawable: int = Query(..., ge=1)
+    max_withdrawable: int = Query(...)
     uses: int = Query(..., ge=1, le=250)
     wait_time: int = Query(..., ge=1)
     is_static: bool = Query(True)
@@ -20,7 +20,7 @@ class CreateWithdrawData(BaseModel):
     custom_url: str | None = Query(None)
 
     @validator("max_withdrawable")
-    def check_max_withdrawable(self, v, values):
+    def check_max_withdrawable(self, v: int, values) -> int:
         if "min_withdrawable" in values and v < values["min_withdrawable"]:
             raise ValueError("max_withdrawable must be at least min_withdrawable")
         return v
