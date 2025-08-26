@@ -19,20 +19,27 @@ def withdraw_renderer():
     return template_renderer(["withdraw/templates"])
 
 
-@withdraw_ext_generic.get("/", response_class=HTMLResponse)
-async def index(request: Request, user: User = Depends(check_user_exists)):
+@withdraw_ext_generic.get("/")
+async def index(
+    request: Request, user: User = Depends(check_user_exists)
+) -> HTMLResponse:
     return withdraw_renderer().TemplateResponse(
         "withdraw/index.html", {"request": request, "user": user.json()}
     )
 
 
-@withdraw_ext_generic.get("/{link_id}", response_class=HTMLResponse)
-async def display(request: Request, link_id):
+@withdraw_ext_generic.get("/{link_id}")
+async def display(request: Request, link_id: str) -> HTMLResponse:
     link = await get_withdraw_link(link_id)
 
     if not link:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
+        )
+
+    if link.is_public is False:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="Withdraw link is not public."
         )
 
     if link.open_time and link.open_time > datetime.now(timezone.utc).timestamp():
@@ -46,63 +53,53 @@ async def display(request: Request, link_id):
         {
             "request": request,
             "spent": link.secrets.is_spent,
-            "unique_hash": link.secrets.next_secret,
+            "secret": link.secrets.next_secret,
         },
     )
 
 
-@withdraw_ext_generic.get("/print/{link_id}", response_class=HTMLResponse)
-async def print_qr(request: Request, link_id):
+@withdraw_ext_generic.get("/print/{link_id}")
+async def print_qr(
+    request: Request, link_id: str, user: User = Depends(check_user_exists)
+) -> HTMLResponse:
     link = await get_withdraw_link(link_id)
     if not link:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
         )
-
-    # if link.uses == 0:
-
-    #     return withdraw_renderer().TemplateResponse(
-    #         "withdraw/print_qr.html",
-    #         {"request": request, "link": link.json(), "unique": False},
-    #     )
-    # links = []
-    # count = 0
-
-    # for _ in link.usescsv.split(","):
-    #     linkk = await get_withdraw_link(link_id, count)
-    #     if not linkk:
-    #         raise HTTPException(
-    #             HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
-    #         )
-    #     try:
-    #         lnurl = create_lnurl(linkk, request)
-    #     except ValueError as exc:
-    #         raise HTTPException(
-    #             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-    #             detail=str(exc),
-    #         ) from exc
-    #     links.append(str(lnurl.bech32))
-    #     count = count + 1
-    # page_link = list(chunks(links, 2))
-    # linked = list(chunks(page_link, 5))
+    if link.wallet not in user.wallet_ids:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="This is not your withdraw link."
+        )
+    links = []
+    for secret in link.secrets.items:
+        url = request.url_for("withdraw.lnurl", id_or_k1=secret.k1)
+        lnurl = parse_obj_as(Lnurl, str(url))
+        links.append(str(lnurl.bech32))
 
     return withdraw_renderer().TemplateResponse(
-        "withdraw/print_qr.html", {"request": request, "link": [], "unique": True}
+        "withdraw/print_qr.html", {"request": request, "links": links}
     )
 
 
-@withdraw_ext_generic.get("/csv/{link_id}", response_class=HTMLResponse)
-async def csv(req: Request, link_id):
+@withdraw_ext_generic.get("/csv/{link_id}")
+async def csv(
+    req: Request, link_id: str, user: User = Depends(check_user_exists)
+) -> StreamingResponse:
     link = await get_withdraw_link(link_id)
     if not link:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
+        )
+    if link.wallet not in user.wallet_ids:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="This is not your withdraw link."
         )
 
     buffer = io.StringIO()
     count = 0
-    for _ in link.secrets.items:
-        url = req.url_for("withdraw.lnurl_callback", id_or_secret=link_id)
+    for secret in link.secrets.items:
+        url = req.url_for("withdraw.lnurl", id_or_k1=secret.k1)
         lnurl = parse_obj_as(Lnurl, str(url))
         buffer.write(f"{lnurl.bech32!s}\n")
         count += 1

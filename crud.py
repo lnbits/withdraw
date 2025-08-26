@@ -10,11 +10,12 @@ async def create_withdraw_link(
 ) -> WithdrawLink:
     withdraw_link = WithdrawLink(
         title=data.title,
-        wallet=data.wallet or wallet_id,
+        wallet=wallet_id,
         min_withdrawable=data.min_withdrawable,
         max_withdrawable=data.max_withdrawable,
         wait_time=data.wait_time,
         is_static=data.is_static,
+        is_public=data.is_public,
         webhook_url=data.webhook_url,
         webhook_headers=data.webhook_headers,
         webhook_body=data.webhook_body,
@@ -44,8 +45,8 @@ async def get_withdraw_link(link_id: str) -> WithdrawLink | None:
 
 async def get_withdraw_link_by_k1(k1: str) -> WithdrawLink | None:
     return await db.fetchone(
-        "SELECT * FROM withdraw.withdraw_link WHERE secrets LIKE '%:k1%'",
-        {"k1": k1},
+        "SELECT * FROM withdraw.withdraw_link WHERE secrets LIKE :k1",
+        {"k1": f"%{k1}%"},
         WithdrawLink,
     )
 

@@ -1,28 +1,21 @@
 {% extends "print.html" %} {% block page %}
-
 <div class="row">
   <div class="" id="vue">
-    {% for page in link %}
-    <page size="A4" id="pdfprint">
+    <page size="A4" id="pdfprint" v-for="page in pages">
       <table style="width: 100%">
-        {% for threes in page %}
-        <tr style="height: 59.4mm">
-          {% for one in threes %}
-          <td style="width: 105mm">
+        <tr v-for="row in page" style="height: 59.4mm">
+          <td v-for="column in row" style="width: 105mm">
             <center>
               <lnbits-qrcode
                 style="width: fit-content"
-                :value="theurl + '/?lightning={{one}}'"
+                :value="url + '?lightning=' + column"
                 :options="{width: 150}"
               ></lnbits-qrcode>
             </center>
           </td>
-          {% endfor %}
         </tr>
-        {% endfor %}
       </table>
     </page>
-    {% endfor %}
   </div>
 </div>
 {% endblock %} {% block styles %}
@@ -58,12 +51,39 @@
     el: '#vue',
     data() {
       return {
-        theurl: location.protocol + '//' + location.host,
-        printDialog: {
-          show: true,
-          data: null
+        pages: [],
+        columns: 3,
+        rows: 4,
+        url: window.location.origin,
+        links: {{ links | tojson | safe }},
+      }
+    },
+    methods: {
+      preparePages() {
+        let tempPage = []
+        let tempRow = []
+        this.links.forEach((link, index) => {
+          tempRow.push(link)
+          if ((index + 1) % this.columns === 0) {
+            tempPage.push(tempRow)
+            tempRow = []
+          }
+          if ((index + 1) % (this.columns * this.rows) === 0) {
+            this.pages.push(tempPage)
+            tempPage = []
+          }
+        })
+        if (tempRow.length > 0) {
+          tempPage.push(tempRow)
+        }
+        if (tempPage.length > 0) {
+          this.pages.push(tempPage)
         }
       }
+    },
+    created() {
+        this.preparePages()
+        console.log(this.pages)
     }
   })
 </script>

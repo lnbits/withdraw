@@ -24,7 +24,46 @@ from .models import WithdrawLink
 withdraw_ext_lnurl = APIRouter(prefix="/api/v1/lnurl")
 
 
-@withdraw_ext_lnurl.get("/{id_or_k1}")
+# note important that this endpoint is defined before the dynamic /{id_or_k1} endpoint
+@withdraw_ext_lnurl.get("/cb", name="withdraw.lnurl_callback")
+async def api_lnurl_callback(
+    k1: str, pr: str
+) -> LnurlErrorResponse | LnurlSuccessResponse:
+
+    link = await get_withdraw_link_by_k1(k1)
+    if not link:
+        return LnurlErrorResponse(reason="Invalid k1.")
+
+    secret = link.secrets.get_secret(k1)
+    if not secret:
+        return LnurlErrorResponse(reason="Invalid k1.")
+
+    if secret.used:
+        return LnurlErrorResponse(reason="Withdraw is spent.")
+
+    # IMPORTANT: update the link in the db before paying the invoice
+    # so that concurrent requests can't use the same secret
+    link.open_time = int(datetime.now().timestamp()) + link.wait_time
+    link.secrets.use_secret(k1)
+    await update_withdraw_link(link)
+
+    try:
+        payment = await pay_invoice(
+            wallet_id=link.wallet,
+            payment_request=pr,
+            max_sat=link.max_withdrawable,
+            extra={"tag": "withdraw", "withdraw_id": link.id},
+        )
+    except PaymentError as exc:
+        return LnurlErrorResponse(reason=f"Payment error: {exc.message}")
+
+    if link.webhook_url:
+        await dispatch_webhook(link, payment, pr)
+
+    return LnurlSuccessResponse()
+
+
+@withdraw_ext_lnurl.get("/{id_or_k1}", name="withdraw.lnurl")
 async def api_lnurl_response(
     request: Request, id_or_k1: str
 ) -> LnurlWithdrawResponse | LnurlErrorResponse:
@@ -51,6 +90,12 @@ async def api_lnurl_response(
         if secret.used:
             return LnurlErrorResponse(reason="Withdraw is spent.")
 
+    now = int(datetime.now().timestamp())
+    if now < link.open_time:
+        return LnurlErrorResponse(
+            reason=f"wait link open_time {link.open_time - now} seconds."
+        )
+
     url = request.url_for("withdraw.lnurl_callback")
     try:
         callback_url = parse_obj_as(CallbackUrl, str(url))
@@ -64,49 +109,6 @@ async def api_lnurl_response(
         maxWithdrawable=MilliSatoshi(link.max_withdrawable * 1000),
         defaultDescription=link.title,
     )
-
-
-@withdraw_ext_lnurl.get("/cb", name="withdraw.lnurl_callback")
-async def api_lnurl_callback(
-    k1: str, pr: str
-) -> LnurlErrorResponse | LnurlSuccessResponse:
-
-    link = await get_withdraw_link_by_k1(k1)
-    if not link:
-        return LnurlErrorResponse(reason="Invalid k1.")
-
-    now = int(datetime.now().timestamp())
-    if now < link.open_time:
-        return LnurlErrorResponse(
-            reason=f"wait link open_time {link.open_time - now} seconds."
-        )
-
-    secret = link.secrets.get_secret(k1)
-    if not secret:
-        return LnurlErrorResponse(reason="Invalid k1.")
-
-    if secret.used:
-        return LnurlErrorResponse(reason="Withdraw is spent.")
-
-    # IMPORTANT: update the link in the db before paying the invoice
-    # so that concurrent requests can't use the same secret
-    link.secrets.use_secret(k1)
-    await update_withdraw_link(link)
-
-    try:
-        payment = await pay_invoice(
-            wallet_id=link.wallet,
-            payment_request=pr,
-            max_sat=link.max_withdrawable,
-            extra={"tag": "withdraw", "withdraw_id": link.id},
-        )
-    except PaymentError as exc:
-        return LnurlErrorResponse(reason=f"Payment error: {exc.message}")
-
-    if link.webhook_url:
-        await dispatch_webhook(link, payment, pr)
-
-    return LnurlSuccessResponse()
 
 
 async def dispatch_webhook(

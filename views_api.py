@@ -77,6 +77,8 @@ async def api_link_update(
         )
 
     for k, v in data.dict().items():
+        if k == "uses":
+            continue
         setattr(link, k, v)
 
     return await update_withdraw_link(link)

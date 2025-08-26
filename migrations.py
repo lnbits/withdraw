@@ -141,5 +141,11 @@ async def m007_add_created_at_timestamp(db):
     )
 
 
-async def m008_add_secrets(db):
+async def m008_add_secrets_static_public(db):
     await db.execute("ALTER TABLE withdraw.withdraw_link ADD COLUMN secrets TEXT;")
+    await db.execute("ALTER TABLE withdraw.withdraw_link ADD COLUMN is_static BOOLEAN;")
+    await db.execute("UPDATE withdraw.withdraw_link SET is_static = NOT is_unique;")
+    await db.execute(
+        "ALTER TABLE withdraw.withdraw_link ADD COLUMN is_public DEFAULT TRUE;"
+    )
+    # await db.execute("DROP TABLE withdraw.hash_check;")

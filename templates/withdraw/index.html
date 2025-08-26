@@ -53,6 +53,7 @@
             <q-tr :props="props">
               <q-td auto-width>
                 <q-btn
+                  v-if="props.row.is_public"
                   unelevated
                   dense
                   size="xs"
@@ -158,23 +159,31 @@
           type="text"
           label="Link title *"
         ></q-input>
+        <div class="row q-col-gutter-none">
+          <div class="col-6">
+            <q-input
+              filled
+              dense
+              v-model.number="formDialog.data.min_withdrawable"
+              type="number"
+              min="10"
+              label="Min withdrawable (sat, at least 10) *"
+              class="q-pr-sm"
+            ></q-input>
+          </div>
+          <div class="col-6">
+            <q-input
+              filled
+              dense
+              v-model.number="formDialog.data.max_withdrawable"
+              type="number"
+              min="10"
+              label="Max withdrawable (sat, at least 10) *"
+            ></q-input>
+          </div>
+        </div>
         <q-input
-          filled
-          dense
-          v-model.number="formDialog.data.min_withdrawable"
-          type="number"
-          min="10"
-          label="Min withdrawable (sat, at least 10) *"
-        ></q-input>
-        <q-input
-          filled
-          dense
-          v-model.number="formDialog.data.max_withdrawable"
-          type="number"
-          min="10"
-          label="Max withdrawable (sat, at least 10) *"
-        ></q-input>
-        <q-input
+          v-if="!formDialog.data.id"
           filled
           dense
           v-model.number="formDialog.data.uses"
@@ -241,6 +250,23 @@
           <q-item tag="label" class="rounded-borders">
             <q-item-section avatar>
               <q-checkbox
+                v-model="formDialog.data.is_public"
+                color="primary"
+              ></q-checkbox>
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Enable public/shareable URL. </q-item-label>
+              <q-item-label caption
+                >This will create a shareable URL that anyone can use to
+                withdraw from this link.</q-item-label
+              >
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-list>
+          <q-item tag="label" class="rounded-borders">
+            <q-item-section avatar>
+              <q-checkbox
                 v-model="formDialog.data.use_custom"
                 color="primary"
               ></q-checkbox>
@@ -267,18 +293,17 @@
           <q-item tag="label" class="rounded-borders">
             <q-item-section avatar>
               <q-checkbox
-                v-model="formDialog.data.is_unique"
+                v-model="formDialog.data.is_static"
                 color="primary"
               ></q-checkbox>
             </q-item-section>
             <q-item-section>
+              <q-item-label>Use static withdraw QR codes </q-item-label>
               <q-item-label
-                >Use unique withdraw QR codes to reduce `assmilking`
+                >If enabled, the same withdraw QR code will be used for every
+                withdrawal with `wait_time` in between withdrawals. This makes
+                it prone for attackers to `assmilk` your withdraw link.
               </q-item-label>
-              <q-item-label caption
-                >This is recommended if you are sharing the links on social
-                media or print QR codes.</q-item-label
-              >
             </q-item-section>
           </q-item>
         </q-list>
@@ -404,22 +429,22 @@
         @update:lnurl="v => lnurl = v"
         prefix="lnurlw"
       ></lnbits-qrcode-lnurl>
-      <p style="word-break: break-all">
-        <strong>ID:</strong> <span v-text="qrCodeDialog.data.id"></span><br />
-        <strong>Unique:</strong>
-        <span v-text="qrCodeDialog.data.is_unique"></span>
-        <span v-if="qrCodeDialog.data.is_unique" class="text-deep-purple">
+      <p class="q-mt-md" style="word-break: break-all">
+        <strong>ID: </strong><span v-text="qrCodeDialog.data.id"></span><br />
+        <strong>Static: </strong>
+        <span v-text="qrCodeDialog.data.is_static"></span>
+        <span v-if="!qrCodeDialog.data.is_static" class="text-deep-purple">
           (QR code will change after each withdrawal)</span
         ><br />
-        <strong>Max. withdrawable:</strong>
+        <strong>Max. withdrawable: </strong>
         <span v-text="qrCodeDialog.data.max_withdrawable"></span> sat<br />
-        <strong>Wait time:</strong>
+        <strong>Wait time: </strong>
         <span v-text="qrCodeDialog.data.wait_time"></span> seconds<br />
-        <strong>Withdraws:</strong>
-        <span v-text="qrCodeDialog.data.used"></span>/
-        <span v-text="qrCodeDialog.data.uses"></span><br />
+        <strong>Withdraws: </strong>
+        <span v-text="qrCodeDialog.data.secrets.used"></span> /
+        <span v-text="qrCodeDialog.data.secrets.total"></span><br />
         <q-linear-progress
-          :value="qrCodeDialog.data.used / qrCodeDialog.data.uses"
+          :value="qrCodeDialog.progress"
           color="primary"
           class="q-mt-sm"
         ></q-linear-progress>
@@ -441,6 +466,7 @@
           ><q-tooltip>Write to NFC</q-tooltip></q-btn
         >
         <q-btn
+          v-if="qrCodeDialog.data.is_public"
           outline
           color="grey"
           icon="link"

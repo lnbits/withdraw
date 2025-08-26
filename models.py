@@ -9,24 +9,24 @@ from pydantic import BaseModel, Field, validator
 class CreateWithdrawData(BaseModel):
     title: str = Query(...)
     min_withdrawable: int = Query(..., ge=1)
-    max_withdrawable: int = Query(...)
+    max_withdrawable: int = Query(..., ge=1)
     uses: int = Query(..., ge=1, le=250)
     wait_time: int = Query(..., ge=1)
     is_static: bool = Query(True)
-    wallet: str | None = Query(None)
+    is_public: bool = Query(True)
     webhook_url: str | None = Query(None)
     webhook_headers: str | None = Query(None)
     webhook_body: str | None = Query(None)
     custom_url: str | None = Query(None)
 
     @validator("max_withdrawable")
-    def check_max_withdrawable(self, v: int, values) -> int:
+    def check_max_withdrawable(cls, v: int, values) -> int:
         if "min_withdrawable" in values and v < values["min_withdrawable"]:
             raise ValueError("max_withdrawable must be at least min_withdrawable")
         return v
 
     @validator("webhook_body")
-    def check_webhook_body(self, v):
+    def check_webhook_body(cls, v):
         if v:
             try:
                 json.loads(v)
@@ -35,7 +35,7 @@ class CreateWithdrawData(BaseModel):
         return v
 
     @validator("webhook_headers")
-    def check_headers_json(self, v):
+    def check_headers_json(cls, v):
         if v:
             try:
                 json.loads(v)
@@ -47,9 +47,10 @@ class CreateWithdrawData(BaseModel):
 class WithdrawSecret(BaseModel):
     k1: str = Field(default_factory=urlsafe_short_hash)
     withdraw_id: str
-    amount: int | None = None
+    amount: int
     used: bool = False
     used_at: int | None = None
+    payment_hash_melt: str | None = None
 
 
 class WithdrawSecrets(BaseModel):
@@ -86,6 +87,7 @@ class WithdrawLink(BaseModel):
     max_withdrawable: int
     wait_time: int
     is_static: bool
+    is_public: bool
     webhook_url: str | None = None
     webhook_headers: str | None = None
     webhook_body: str | None = None

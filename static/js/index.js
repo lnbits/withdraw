@@ -68,7 +68,8 @@ window.app = Vue.createApp({
         secondMultiplier: 'seconds',
         secondMultiplierOptions: ['seconds', 'minutes', 'hours'],
         data: {
-          is_unique: false,
+          is_static: false,
+          is_public: false,
           use_custom: false,
           has_webhook: false
         }
@@ -76,7 +77,8 @@ window.app = Vue.createApp({
       simpleformDialog: {
         show: false,
         data: {
-          is_unique: true,
+          is_static: true,
+          is_public: false,
           use_custom: false,
           title: 'Vouchers',
           min_withdrawable: 0,
@@ -125,27 +127,38 @@ window.app = Vue.createApp({
     },
     closeFormDialog() {
       this.formDialog.data = {
-        is_unique: false,
+        is_static: false,
+        is_public: false,
         use_custom: false,
         has_webhook: false
       }
     },
     simplecloseFormDialog() {
       this.simpleformDialog.data = {
-        is_unique: false,
+        is_static: false,
+        is_public: false,
         use_custom: false
       }
+    },
+    getNextSecret(secrets) {
+      return _.findWhere(secrets, {used: false}).k1
     },
     openQrCodeDialog(linkId) {
       const link = _.findWhere(this.withdrawLinks, {id: linkId})
       this.qrCodeDialog.data = _.clone(link)
       this.qrCodeDialog.show = true
-      this.activeUrl = `${window.location.origin}/withdraw/api/v1/lnurl/${link.unique_hash}`
+      this.qrCodeDialog.progress =
+        link.secrets.used == 0 ? 0 : link.secrets.used / link.secrets.total
+      const id_or_k1 = link.is_static
+        ? link.id
+        : this.getNextSecret(link.secrets.items)
+      this.activeUrl = `${window.location.origin}/withdraw/api/v1/lnurl/${id_or_k1}`
     },
     openUpdateDialog(linkId) {
       let link = _.findWhere(this.withdrawLinks, {id: linkId})
       link._data.has_webhook = link._data.webhook_url ? true : false
       this.formDialog.data = _.clone(link._data)
+      this.formDialog.data.uses = 1
       this.formDialog.show = true
     },
     sendFormData() {
@@ -185,7 +198,7 @@ window.app = Vue.createApp({
       data.wait_time = 1
       data.min_withdrawable = data.max_withdrawable
       data.title = 'vouchers'
-      data.is_unique = true
+      data.is_static = true
 
       if (!data.use_custom) {
         data.custom_url = null
@@ -217,7 +230,7 @@ window.app = Vue.createApp({
           data
         )
         .then(response => {
-          this.withdrawLinks = _.reject(this.withdrawLinks, function (obj) {
+          this.withdrawLinks = _.reject(this.withdrawLinks, obj => {
             return obj.id === data.id
           })
           this.withdrawLinks.push(mapWithdrawLink(response.data))
