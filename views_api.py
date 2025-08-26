@@ -3,7 +3,7 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, Query
 from lnbits.core.crud import get_user
 from lnbits.core.models import SimpleStatus, WalletTypeInfo
-from lnbits.decorators import require_admin_key, require_invoice_key
+from lnbits.decorators import require_admin_key
 
 from .crud import (
     create_withdraw_link,
@@ -19,7 +19,7 @@ withdraw_ext_api = APIRouter(prefix="/api/v1")
 
 @withdraw_ext_api.get("/links")
 async def api_links(
-    key_info: WalletTypeInfo = Depends(require_invoice_key),
+    key_info: WalletTypeInfo = Depends(require_admin_key),
     all_wallets: bool = Query(False),
     offset: int = Query(0),
     limit: int = Query(0),
@@ -35,7 +35,7 @@ async def api_links(
 
 @withdraw_ext_api.get("/links/{link_id}")
 async def api_link_retrieve(
-    link_id: str, key_info: WalletTypeInfo = Depends(require_invoice_key)
+    link_id: str, key_info: WalletTypeInfo = Depends(require_admin_key)
 ) -> WithdrawLink:
     link = await get_withdraw_link(link_id)
 

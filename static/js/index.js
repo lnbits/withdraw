@@ -114,7 +114,7 @@ window.app = Vue.createApp({
         .request(
           'GET',
           `/withdraw/api/v1/links?all_wallets=true&limit=${query.limit}&offset=${query.offset}`,
-          this.g.user.wallets[0].inkey
+          this.g.user.wallets[0].adminkey
         )
         .then(response => {
           this.withdrawLinks = response.data.data.map(mapWithdrawLink)
