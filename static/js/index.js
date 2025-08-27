@@ -29,22 +29,10 @@ window.app = Vue.createApp({
             }
           },
           {
-            name: 'wait_time',
+            name: 'progress',
             align: 'right',
-            label: 'Wait',
-            field: 'wait_time'
-          },
-          {
-            name: 'uses',
-            align: 'right',
-            label: 'Uses',
-            field: 'uses'
-          },
-          {
-            name: 'uses_left',
-            align: 'right',
-            label: 'Uses left',
-            field: 'uses_left'
+            label: 'Used / Total',
+            field: 'secrets'
           },
           {
             name: 'max_withdrawable',
@@ -54,6 +42,12 @@ window.app = Vue.createApp({
             format: v => {
               return new Intl.NumberFormat(LOCALE).format(v)
             }
+          },
+          {
+            name: 'wait_time',
+            align: 'right',
+            label: 'Wait',
+            field: 'wait_time'
           }
         ],
         pagination: {
@@ -62,7 +56,6 @@ window.app = Vue.createApp({
           rowsNumber: 0
         }
       },
-      nfcTagWriting: false,
       formDialog: {
         show: false,
         secondMultiplier: 'seconds',
@@ -275,42 +268,6 @@ window.app = Vue.createApp({
               LNbits.utils.notifyApiError(error)
             })
         })
-    },
-    async writeNfcTag(lnurl) {
-      try {
-        if (typeof NDEFReader == 'undefined') {
-          throw {
-            toString: function () {
-              return 'NFC not supported on this device or browser.'
-            }
-          }
-        }
-
-        const ndef = new NDEFReader()
-
-        this.nfcTagWriting = true
-        this.$q.notify({
-          message: 'Tap your NFC tag to write the LNURL-withdraw link to it.'
-        })
-
-        await ndef.write({
-          records: [{recordType: 'url', data: 'lightning:' + lnurl, lang: 'en'}]
-        })
-
-        this.nfcTagWriting = false
-        this.$q.notify({
-          type: 'positive',
-          message: 'NFC tag written successfully.'
-        })
-      } catch (error) {
-        this.nfcTagWriting = false
-        this.$q.notify({
-          type: 'negative',
-          message: error
-            ? error.toString()
-            : 'An unexpected error has occurred.'
-        })
-      }
     },
     exportCSV() {
       LNbits.utils.exportCSV(

@@ -46,7 +46,6 @@
                 :props="props"
                 v-text="col.label"
               ></q-th>
-              <q-th auto-width></q-th>
             </q-tr>
           </template>
           <template v-slot:body="props">
@@ -101,19 +100,24 @@
                   color="pink"
                 ></q-btn>
               </q-td>
-              <q-td
-                v-for="col in props.cols"
-                :key="col.name"
-                :props="props"
-                v-text="col.value"
-              >
-              </q-td>
-              <q-td>
-                <q-icon v-if="props.row.webhook_url" size="14px" name="http">
-                  <q-tooltip
-                    >Webhook to <span v-text="props.row.webhook_url"></span
-                  ></q-tooltip>
-                </q-icon>
+              <q-td v-for="col in props.cols" :key="col.name" :props="props">
+                <span class="flex" v-if="col.name == 'progress'">
+                  <div
+                    class="flex align-center"
+                    style="flex-grow: 1; align-content: center"
+                  >
+                    <q-linear-progress
+                      :value="props.row.secrets.total > 0 ? props.row.secrets.used / props.row.secrets.total : 0"
+                      color="primary"
+                      class="flex-item"
+                    ></q-linear-progress>
+                  </div>
+                  <span class="q-ml-sm">
+                    <span v-text="props.row.secrets.used"></span> /
+                    <span v-text="props.row.secrets.total"></span>
+                  </span>
+                </span>
+                <span v-else v-text="col.value"></span>
               </q-td>
             </q-tr>
           </template>
@@ -423,7 +427,7 @@
   </q-dialog>
 
   <q-dialog v-model="qrCodeDialog.show" position="top">
-    <q-card v-if="qrCodeDialog.data" class="q-pa-lg lnbits__dialog-card">
+    <q-card v-if="qrCodeDialog.data" class="q-pa-lg">
       <lnbits-qrcode-lnurl
         :url="activeUrl"
         @update:lnurl="v => lnurl = v"
@@ -450,21 +454,6 @@
         ></q-linear-progress>
       </p>
       <div class="row q-mt-lg q-gutter-sm">
-        <q-btn
-          outline
-          color="grey"
-          @click="copyText(lnurl, 'LNURL copied to clipboard!')"
-          class="q-ml-sm"
-          >Copy LNURL</q-btn
-        >
-        <q-btn
-          outline
-          color="grey"
-          icon="nfc"
-          @click="writeNfcTag(lnurl)"
-          :disable="nfcTagWriting"
-          ><q-tooltip>Write to NFC</q-tooltip></q-btn
-        >
         <q-btn
           v-if="qrCodeDialog.data.is_public"
           outline
