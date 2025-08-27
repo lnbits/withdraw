@@ -53,9 +53,7 @@ line-length = 88
 # RUF - ruff
 # B - bugbear
 select = ["F", "E", "W", "I", "A", "C", "N", "UP", "RUF", "B"]
-# UP007: pyupgrade: use X | Y instead of Optional. (python3.10)
-# C901 `api_link_create_or_update` is too complex (15 > 10)
-ignore = ["UP007", "C901"]
+ignore = []
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
