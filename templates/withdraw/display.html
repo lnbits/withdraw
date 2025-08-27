@@ -11,21 +11,8 @@
             <lnbits-qrcode-lnurl
               prefix="lnurlw"
               :url="url"
-              @update:lnurl="v => lnurl = v"
             ></lnbits-qrcode-lnurl>
           </a>
-        </div>
-        <div class="row q-mt-lg q-gutter-sm">
-          <q-btn outline color="grey" @click="copyText(lnurl)"
-            >Copy LNURL</q-btn
-          >
-          <q-btn
-            outline
-            color="grey"
-            icon="nfc"
-            @click="writeNfcTag(lnurl)"
-            :disable="nfcTagWriting"
-          ></q-btn>
         </div>
       </q-card-section>
     </q-card>
@@ -55,9 +42,7 @@
     data() {
       return {
         spent: {{ 'true' if spent else 'false' }},
-        url: `${window.location.origin}/withdraw/api/v1/lnurl/{{ unique_hash }}`,
-        lnurl: '',
-        nfcTagWriting: false
+        url: `${window.location.origin}/withdraw/api/v1/lnurl/{{ id_or_k1 }}`,
       }
     }
   })
