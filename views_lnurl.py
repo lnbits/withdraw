@@ -79,6 +79,12 @@ async def api_lnurl_response(
         if not secret:
             return LnurlErrorResponse(reason="Withdraw is spent.")
 
+        now = int(datetime.now().timestamp())
+        if now < link.open_time:
+            return LnurlErrorResponse(
+                reason=f"wait link open_time {link.open_time - now} seconds."
+            )
+
     # non-static links are identified by their k1
     else:
         link = await get_withdraw_link_by_k1(id_or_k1)
@@ -89,12 +95,6 @@ async def api_lnurl_response(
             return LnurlErrorResponse(reason="Invalid k1.")
         if secret.used:
             return LnurlErrorResponse(reason="Withdraw is spent.")
-
-    now = int(datetime.now().timestamp())
-    if now < link.open_time:
-        return LnurlErrorResponse(
-            reason=f"wait link open_time {link.open_time - now} seconds."
-        )
 
     url = request.url_for("withdraw.lnurl_callback")
     try:
