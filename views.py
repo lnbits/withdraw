@@ -42,18 +42,29 @@ async def display(request: Request, link_id: str) -> HTMLResponse:
             status_code=HTTPStatus.FORBIDDEN, detail="Withdraw link is not public."
         )
 
-    if link.open_time and link.open_time > datetime.now(timezone.utc).timestamp():
+    if (
+        not link.is_static
+        and link.open_time
+        and link.open_time > datetime.now(timezone.utc).timestamp()
+    ):
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN,
             detail="Withdraw link is not yet active.",
+        )
+
+    secret = link.secrets.next_secret
+    if not secret:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Withdraw link is out of withdraws.",
         )
 
     return withdraw_renderer().TemplateResponse(
         "withdraw/display.html",
         {
             "request": request,
-            "spent": link.secrets.is_spent,
-            "secret": link.secrets.next_secret,
+            "spent": link.secrets.is_spent or secret.used,
+            "id_or_k1": link.id if link.is_static else secret.k1,
         },
     )
 
