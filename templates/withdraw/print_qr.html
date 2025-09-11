@@ -4,23 +4,21 @@
   <div class="" id="vue">
     {% for page in link %}
     <page size="A4" id="pdfprint">
-      <table style="width: 100%">
-        {% for threes in page %}
-        <tr style="height: 59.4mm">
-          {% for one in threes %}
-          <td style="width: 105mm">
-            <center>
-              <lnbits-qrcode
-                :value="theurl + '/?lightning={{one}}'"
-                :show-buttons="false"
-                :size="50"
-              ></lnbits-qrcode>
-            </center>
-          </td>
+      <div class="full-height content-center">
+        {% for row in page %}
+        <div class="row" style="max-height: 54mm">
+          {% for one in row %}
+          <div class="col-6">
+            <lnbits-qrcode
+              style="width: 50mm"
+              :value="theurl + '/?lightning={{one}}'"
+              :show-buttons="false"
+            ></lnbits-qrcode>
+          </div>
           {% endfor %}
-        </tr>
+        </div>
         {% endfor %}
-      </table>
+      </div>
     </page>
     {% endfor %}
   </div>
@@ -64,6 +62,10 @@
           data: null
         }
       }
+    },
+    created() {
+      const link = JSON.parse('{{ link | tojson | safe }}')
+      console.log(link)
     }
   })
 </script>
