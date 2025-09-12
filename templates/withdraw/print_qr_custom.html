@@ -11,7 +11,8 @@
         <div class="lnurlw">
           <lnbits-qrcode
             :value="theurl + '/?lightning={{one}}'"
-            :options="{width: 98, margin: 2, logo: false}"
+            :show-buttons="false"
+            :options="{width: 150}"
           ></lnbits-qrcode>
         </div>
       </div>
@@ -61,9 +62,10 @@
   .wrapper .lnurlw {
     display: block;
     position: absolute;
-    top: calc(7.3mm + 1rem);
-    left: calc(7.5mm + 1rem);
+    top: calc(3mm + 1rem);
+    left: calc(6mm + 1rem);
     transform: rotate(45deg);
+    width: 27mm;
   }
 
   @media print {
@@ -83,8 +85,8 @@
     .wrapper .lnurlw {
       display: block;
       position: absolute;
-      top: 7.3mm;
-      left: 7.5mm;
+      top: 3mm;
+      left: 6mm;
       transform: rotate(45deg);
     }
   }
