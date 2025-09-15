@@ -108,7 +108,7 @@ async def remove_unique_withdraw_link(link: WithdrawLink, unique_hash: str) -> N
 
 async def increment_withdraw_link(link: WithdrawLink) -> None:
     link.used = link.used + 1
-    link.open_time = int(datetime.now().timestamp()) + link.wait_time
+    link.open_time = int(datetime.now().timestamp())
     await update_withdraw_link(link)
 
 
