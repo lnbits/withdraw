@@ -37,6 +37,16 @@ class WithdrawLink(BaseModel):
     webhook_body: str = Query(None)
     custom_url: str = Query(None)
     created_at: datetime
+    lnurl: str | None = Field(
+        default=None,
+        no_database=True,
+        deprecated=True,
+        description=(
+            "Deprecated: Instead of using this bech32 encoded string, dynamically "
+            "generate your own static link (lud17/bech32) on the client side. "
+            "Example: lnurlw://${window.location.hostname}/lnurlw/${id}"
+        ),
+    )
 
     @property
     def is_spent(self) -> bool:
