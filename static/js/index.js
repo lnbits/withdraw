@@ -51,9 +51,7 @@ window.app = Vue.createApp({
             align: 'right',
             label: 'Max (sat)',
             field: 'max_withdrawable',
-            format: v => {
-              return new Intl.NumberFormat(LOCALE).format(v)
-            }
+            format: LNbits.utils.formatSat
           }
         ],
         pagination: {
