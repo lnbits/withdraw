@@ -33,12 +33,20 @@ async def display(request: Request, link_id):
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
         )
 
+    try:
+        lnurl = create_lnurl(link, request)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
     return withdraw_renderer().TemplateResponse(
         "withdraw/display.html",
         {
             "request": request,
             "spent": link.is_spent,
-            "unique_hash": link.unique_hash,
+            "lnurl_url": str(lnurl.url),
         },
     )
 

@@ -47,6 +47,11 @@ class WithdrawLink(BaseModel):
             "Example: lnurlw://${window.location.hostname}/lnurlw/${id}"
         ),
     )
+    lnurl_url: str | None = Field(
+        default=None,
+        no_database=True,
+        description="The raw LNURL callback URL (use for QR code generation)",
+    )
 
     @property
     def is_spent(self) -> bool:
