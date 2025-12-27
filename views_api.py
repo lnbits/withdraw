@@ -45,6 +45,7 @@ async def api_links(
                 detail=str(exc),
             ) from exc
         linkk.lnurl = str(lnurl.bech32)
+        linkk.lnurl_url = str(lnurl.url)
 
     return links
 
@@ -75,6 +76,7 @@ async def api_link_retrieve(
             detail=str(exc),
         ) from exc
     link.lnurl = str(lnurl.bech32)
+    link.lnurl_url = str(lnurl.url)
     return link
 
 
@@ -166,6 +168,7 @@ async def api_link_create_or_update(
         ) from exc
 
     link.lnurl = str(lnurl.bech32)
+    link.lnurl_url = str(lnurl.url)
 
     return link
 

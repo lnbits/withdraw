@@ -138,7 +138,7 @@ window.app = Vue.createApp({
       const link = _.findWhere(this.withdrawLinks, {id: linkId})
       this.qrCodeDialog.data = _.clone(link)
       this.qrCodeDialog.show = true
-      this.activeUrl = `${window.location.origin}/withdraw/api/v1/lnurl/${link.unique_hash}`
+      this.activeUrl = link.lnurl_url
     },
     openUpdateDialog(linkId) {
       let link = _.findWhere(this.withdrawLinks, {id: linkId})

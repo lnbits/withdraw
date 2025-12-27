@@ -55,7 +55,7 @@
     data() {
       return {
         spent: {{ 'true' if spent else 'false' }},
-        url: `${window.location.origin}/withdraw/api/v1/lnurl/{{ unique_hash }}`,
+        url: '{{ lnurl_url }}',
         lnurl: '',
         nfcTagWriting: false
       }
