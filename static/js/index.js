@@ -68,7 +68,8 @@ window.app = Vue.createApp({
         data: {
           is_unique: false,
           use_custom: false,
-          has_webhook: false
+          has_webhook: false,
+          enabled: true
         }
       },
       simpleformDialog: {
@@ -126,7 +127,8 @@ window.app = Vue.createApp({
       this.formDialog.data = {
         is_unique: false,
         use_custom: false,
-        has_webhook: false
+        has_webhook: false,
+        enabled: true
       }
     },
     simplecloseFormDialog() {

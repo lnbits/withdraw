@@ -255,6 +255,20 @@
           <q-item tag="label" class="rounded-borders">
             <q-item-section avatar>
               <q-checkbox
+                v-model="formDialog.data.enabled"
+                color="primary"
+              ></q-checkbox>
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Enable / Disable </q-item-label>
+              <q-item-label caption
+                >You can enable or disable these vouchers</q-item-label
+              >
+            </q-item-section>
+          </q-item>
+          <q-item tag="label" class="rounded-borders">
+            <q-item-section avatar>
+              <q-checkbox
                 v-model="formDialog.data.use_custom"
                 color="primary"
               ></q-checkbox>
