@@ -40,6 +40,7 @@
             <q-tr :props="props">
               <q-th auto-width></q-th>
               <q-th auto-width></q-th>
+              <q-th auto-width></q-th>
               <q-th
                 v-for="col in props.cols"
                 :key="col.name"
@@ -51,6 +52,19 @@
           </template>
           <template v-slot:body="props">
             <q-tr :props="props">
+              <q-td auto-width>
+                <q-icon
+                  name="power_settings_new"
+                  :color="props.row.enabled ? 'green' : 'red'"
+                  size="xs"
+                >
+                  <q-tooltip>
+                    <span
+                      v-text="props.row.enabled ? 'Withdraw link is enabled' : 'Withdraw link is disabled'"
+                    ></span>
+                  </q-tooltip>
+                </q-icon>
+              </q-td>
               <q-td auto-width>
                 <q-btn
                   unelevated
@@ -350,6 +364,20 @@
           label="Number of vouchers"
         ></q-input>
         <q-list>
+          <q-item tag="label" class="rounded-borders">
+            <q-item-section avatar>
+              <q-checkbox
+                v-model="simpleformDialog.data.enabled"
+                color="primary"
+              ></q-checkbox>
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Enable / Disable </q-item-label>
+              <q-item-label caption
+                >You can enable or disable these vouchers</q-item-label
+              >
+            </q-item-section>
+          </q-item>
           <q-item tag="label" class="rounded-borders">
             <q-item-section avatar>
               <q-checkbox

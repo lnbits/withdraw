@@ -5,9 +5,6 @@ import httpx
 import shortuuid
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from lnbits.core.crud import update_payment
-from lnbits.core.models import Payment
-from lnbits.core.services import pay_invoice
 from lnurl import (
     CallbackUrl,
     LnurlErrorResponse,
@@ -17,6 +14,10 @@ from lnurl import (
 )
 from loguru import logger
 from pydantic import parse_obj_as
+
+from lnbits.core.crud import update_payment
+from lnbits.core.models import Payment
+from lnbits.core.services import pay_invoice
 
 from .crud import (
     create_hash_check,
@@ -42,6 +43,9 @@ async def api_lnurl_response(
 
     if not link:
         return LnurlErrorResponse(reason="Withdraw link does not exist.")
+
+    if not link.enabled:
+        return LnurlErrorResponse(reason="Withdraw link is disabled.")
 
     if link.is_spent:
         return LnurlErrorResponse(reason="Withdraw is spent.")
@@ -86,10 +90,12 @@ async def api_lnurl_callback(
     pr: str,
     id_unique_hash: str | None = None,
 ) -> LnurlErrorResponse | LnurlSuccessResponse:
-
     link = await get_withdraw_link_by_hash(unique_hash)
     if not link:
         return LnurlErrorResponse(reason="withdraw link not found.")
+
+    if not link.enabled:
+        return LnurlErrorResponse(reason="Withdraw link is disabled.")
 
     if link.is_spent:
         return LnurlErrorResponse(reason="withdraw is spent.")
@@ -193,6 +199,9 @@ async def api_lnurl_multi_response(
 
     if not link:
         return LnurlErrorResponse(reason="Withdraw link does not exist.")
+
+    if not link.enabled:
+        return LnurlErrorResponse(reason="Withdraw link is disabled.")
 
     if link.is_spent:
         return LnurlErrorResponse(reason="Withdraw is spent.")

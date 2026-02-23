@@ -78,7 +78,8 @@ window.app = Vue.createApp({
           use_custom: false,
           title: 'Vouchers',
           min_withdrawable: 0,
-          wait_time: 1
+          wait_time: 1,
+          enabled: true
         }
       },
       qrCodeDialog: {
@@ -131,7 +132,8 @@ window.app = Vue.createApp({
     simplecloseFormDialog() {
       this.simpleformDialog.data = {
         is_unique: false,
-        use_custom: false
+        use_custom: false,
+        enabled: true
       }
     },
     openQrCodeDialog(linkId) {
