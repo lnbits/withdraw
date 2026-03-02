@@ -5,9 +5,6 @@ import httpx
 import shortuuid
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from lnbits.core.crud import update_payment
-from lnbits.core.models import Payment
-from lnbits.core.services import pay_invoice
 from lnurl import (
     CallbackUrl,
     LnurlErrorResponse,
@@ -17,6 +14,11 @@ from lnurl import (
 )
 from loguru import logger
 from pydantic import parse_obj_as
+
+from lnbits.core.crud import update_payment
+from lnbits.core.models import Payment
+from lnbits.core.services import pay_invoice
+from lnbits.utils.exchange_rates import get_fiat_rate_satoshis
 
 from .crud import (
     create_hash_check,
@@ -56,12 +58,20 @@ async def api_lnurl_response(
         request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
     )
 
+    min_withdrawable = link.min_withdrawable
+    max_withdrawable = link.max_withdrawable
+
+    if link.currency:
+        rate = await get_fiat_rate_satoshis(link.currency)
+        min_withdrawable = round(min_withdrawable / 100 * rate)
+        max_withdrawable = round(max_withdrawable / 100 * rate)
+
     callback_url = parse_obj_as(CallbackUrl, url)
     return LnurlWithdrawResponse(
         callback=callback_url,
         k1=link.k1,
-        minWithdrawable=MilliSatoshi(link.min_withdrawable * 1000),
-        maxWithdrawable=MilliSatoshi(link.max_withdrawable * 1000),
+        minWithdrawable=MilliSatoshi(min_withdrawable * 1000),
+        maxWithdrawable=MilliSatoshi(max_withdrawable * 1000),
         defaultDescription=link.title,
     )
 

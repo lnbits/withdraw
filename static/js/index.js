@@ -2,6 +2,10 @@ const mapWithdrawLink = function (obj) {
   obj._data = _.clone(obj)
   obj.uses_left = obj.uses - obj.used
   obj._data.use_custom = Boolean(obj.custom_url)
+  if (obj.currency) {
+    obj.min_withdrawable = obj.min_withdrawable / 100
+    obj.max_withdrawable = obj.max_withdrawable / 100
+  }
   return obj
 }
 
@@ -14,6 +18,7 @@ window.app = Vue.createApp({
     return {
       checker: null,
       withdrawLinks: [],
+      currencyOptions: [],
       lnurl: '',
       withdrawLinksTable: {
         columns: [
@@ -47,11 +52,23 @@ window.app = Vue.createApp({
             field: 'uses_left'
           },
           {
+            name: 'currency',
+            align: 'right',
+            label: 'Currency',
+            field: 'currency',
+            format: function (val) {
+              return val ? val.toUpperCase() : 'sat'
+            }
+          },
+          {
             name: 'max_withdrawable',
             align: 'right',
-            label: 'Max (sat)',
+            label: `Max`,
             field: 'max_withdrawable',
-            format: LNbits.utils.formatSat
+            format: (val, row) =>
+              row.currency
+                ? LNbits.utils.formatCurrency(val, row.currency)
+                : val
           }
         ],
         pagination: {
@@ -164,6 +181,11 @@ window.app = Vue.createApp({
         data.custom_url = CUSTOM_URL
       }
 
+      if (data.currency) {
+        data.min_withdrawable = data.min_withdrawable * 100
+        data.max_withdrawable = data.max_withdrawable * 100
+      }
+
       data.wait_time =
         data.wait_time *
         {
@@ -195,6 +217,11 @@ window.app = Vue.createApp({
 
       if (data.use_custom && !data?.custom_url) {
         data.custom_url = '/static/images/default_voucher.png'
+      }
+
+      if (data.currency) {
+        data.min_withdrawable = data.min_withdrawable * 100
+        data.max_withdrawable = data.max_withdrawable * 100
       }
 
       if (data.id) {
@@ -314,5 +341,6 @@ window.app = Vue.createApp({
       this.getWithdrawLinks()
       this.checker = setInterval(this.getWithdrawLinks, 300000)
     }
+    this.currencyOptions = this.g.allowedCurrencies
   }
 })
