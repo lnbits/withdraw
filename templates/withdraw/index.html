@@ -372,13 +372,24 @@
           label="Wallet *"
         >
         </q-select>
+        <q-select
+          filled
+          dense
+          clearable
+          v-model="simpleformDialog.data.currency"
+          :options="currencyOptions"
+          label="Currency (optional)"
+          hint="Leave blank for sats"
+        >
+        </q-select>
         <q-input
           filled
           dense
           v-model.number="simpleformDialog.data.max_withdrawable"
           type="number"
-          min="10"
-          label="Withdraw amount per voucher (sat, at least 10)"
+          :min="simpleformDialog.data.currency ? 0.01 : 10"
+          :step="simpleformDialog.data.currency ? 0.01 : 1"
+          :label="simpleformDialog.data.currency ? 'Withdraw amount per voucher (' + simpleformDialog.data.currency + ', at least 0.01)' : 'Withdraw amount per voucher (sat, at least 10)'"
         ></q-input>
         <q-input
           filled
