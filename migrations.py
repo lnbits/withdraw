@@ -145,3 +145,7 @@ async def m008_add_enabled_column(db):
     await db.execute(
         "ALTER TABLE withdraw.withdraw_link ADD COLUMN enabled BOOLEAN DEFAULT true;"
     )
+
+
+async def m009_add_currency(db):
+    await db.execute("ALTER TABLE withdraw.withdraw_link ADD COLUMN currency TEXT;")
