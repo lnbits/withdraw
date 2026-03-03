@@ -22,6 +22,7 @@ async def create_withdraw_link(
         created_at=datetime.now(),
         open_time=int(datetime.now().timestamp()) + data.wait_time,
         title=data.title,
+        currency=data.currency,
         min_withdrawable=data.min_withdrawable,
         max_withdrawable=data.max_withdrawable,
         uses=data.uses,
@@ -141,7 +142,6 @@ async def create_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
 
 
 async def get_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
-
     hash_check = await db.fetchone(
         """
             SELECT id as hash, lnurl_id as lnurl
