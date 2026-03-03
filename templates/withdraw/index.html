@@ -337,12 +337,8 @@
             :disable="
                 formDialog.data.wallet == null ||
                 formDialog.data.title == null ||
-                (formDialog.data.min_withdrawable == null || formDialog.data.min_withdrawable < 1) ||
-                (
-                  formDialog.data.max_withdrawable == null ||
-                  formDialog.data.max_withdrawable < 1 ||
-                  formDialog.data.max_withdrawable < formDialog.data.min_withdrawable
-                ) ||
+                !assertMinimumWithdrawable ||
+                !assertMaximumWithdrawable ||
                 formDialog.data.uses == null ||
                 formDialog.data.wait_time == null"
             type="submit"
@@ -447,9 +443,8 @@
             color="primary"
             :disable="
                 simpleformDialog.data.wallet == null ||
-
-                  simpleformDialog.data.max_withdrawable == null ||
-                  simpleformDialog.data.max_withdrawable < 1 ||
+                simpleformDialog.data.max_withdrawable == null ||
+                !assertMaximumWithdrawable ||
                 simpleformDialog.data.uses == null"
             type="submit"
             >Create vouchers</q-btn

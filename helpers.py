@@ -1,9 +1,8 @@
 from fastapi import Request
+from lnbits.utils.exchange_rates import get_fiat_rate_satoshis
 from lnurl import Lnurl
 from lnurl import encode as lnurl_encode
 from shortuuid import uuid
-
-from lnbits.utils.exchange_rates import get_fiat_rate_satoshis
 
 from .models import WithdrawLink
 

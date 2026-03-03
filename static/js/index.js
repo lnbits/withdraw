@@ -111,6 +111,24 @@ window.app = Vue.createApp({
       return this.withdrawLinks.sort(function (a, b) {
         return b.uses_left - a.uses_left
       })
+    },
+    assertMinimumWithdrawable() {
+      const dialog = this.formDialog.show
+        ? this.formDialog
+        : this.simpleformDialog
+      return dialog.data.currency
+        ? dialog.data.min_withdrawable >= 0.01
+        : dialog.data.min_withdrawable >= 1
+    },
+    assertMaximumWithdrawable() {
+      const dialog = this.formDialog.show
+        ? this.formDialog
+        : this.simpleformDialog
+      return dialog.data.currency
+        ? dialog.data.max_withdrawable >= 0.01 &&
+            dialog.data.max_withdrawable >= dialog.data.min_withdrawable
+        : dialog.data.max_withdrawable >= 1 &&
+            dialog.data.max_withdrawable >= dialog.data.min_withdrawable
     }
   },
   methods: {
@@ -181,11 +199,6 @@ window.app = Vue.createApp({
         data.custom_url = CUSTOM_URL
       }
 
-      if (data.currency) {
-        data.min_withdrawable = data.min_withdrawable * 100
-        data.max_withdrawable = data.max_withdrawable * 100
-      }
-
       data.wait_time =
         data.wait_time *
         {
@@ -217,11 +230,6 @@ window.app = Vue.createApp({
 
       if (data.use_custom && !data?.custom_url) {
         data.custom_url = '/static/images/default_voucher.png'
-      }
-
-      if (data.currency) {
-        data.min_withdrawable = data.min_withdrawable * 100
-        data.max_withdrawable = data.max_withdrawable * 100
       }
 
       if (data.id) {
@@ -258,6 +266,7 @@ window.app = Vue.createApp({
         })
     },
     createWithdrawLink(wallet, data) {
+      console.log(data)
       LNbits.api
         .request('POST', '/withdraw/api/v1/links', wallet.adminkey, data)
         .then(response => {
