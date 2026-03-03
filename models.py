@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field
 
 class CreateWithdrawData(BaseModel):
     title: str = Query(...)
-    min_withdrawable: int = Query(..., ge=1)
-    max_withdrawable: int = Query(..., ge=1)
+    min_withdrawable: float = Query(..., ge=0.01)
+    max_withdrawable: float = Query(..., ge=0.01)
     uses: int = Query(..., ge=1)
     wait_time: int = Query(..., ge=1)
     is_unique: bool
@@ -15,6 +15,8 @@ class CreateWithdrawData(BaseModel):
     webhook_headers: str = Query(None)
     webhook_body: str = Query(None)
     custom_url: str = Query(None)
+    enabled: bool = Query(True)
+    currency: str = Query(None)
 
 
 class WithdrawLink(BaseModel):
@@ -37,6 +39,8 @@ class WithdrawLink(BaseModel):
     webhook_body: str = Query(None)
     custom_url: str = Query(None)
     created_at: datetime
+    enabled: bool = Query(True)
+    currency: str = Query(None)
     lnurl: str | None = Field(
         default=None,
         no_database=True,

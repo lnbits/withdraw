@@ -2,6 +2,10 @@ const mapWithdrawLink = function (obj) {
   obj._data = _.clone(obj)
   obj.uses_left = obj.uses - obj.used
   obj._data.use_custom = Boolean(obj.custom_url)
+  if (obj.currency) {
+    obj.min_withdrawable = obj.min_withdrawable / 100
+    obj.max_withdrawable = obj.max_withdrawable / 100
+  }
   return obj
 }
 
@@ -14,6 +18,7 @@ window.app = Vue.createApp({
     return {
       checker: null,
       withdrawLinks: [],
+      currencyOptions: [],
       lnurl: '',
       withdrawLinksTable: {
         columns: [
@@ -47,11 +52,23 @@ window.app = Vue.createApp({
             field: 'uses_left'
           },
           {
+            name: 'currency',
+            align: 'right',
+            label: 'Currency',
+            field: 'currency',
+            format: function (val) {
+              return val ? val.toUpperCase() : 'sat'
+            }
+          },
+          {
             name: 'max_withdrawable',
             align: 'right',
-            label: 'Max (sat)',
+            label: `Max`,
             field: 'max_withdrawable',
-            format: LNbits.utils.formatSat
+            format: (val, row) =>
+              row.currency
+                ? LNbits.utils.formatCurrency(val, row.currency)
+                : val
           }
         ],
         pagination: {
@@ -68,7 +85,8 @@ window.app = Vue.createApp({
         data: {
           is_unique: false,
           use_custom: false,
-          has_webhook: false
+          has_webhook: false,
+          enabled: true
         }
       },
       simpleformDialog: {
@@ -78,7 +96,8 @@ window.app = Vue.createApp({
           use_custom: false,
           title: 'Vouchers',
           min_withdrawable: 0,
-          wait_time: 1
+          wait_time: 1,
+          enabled: true
         }
       },
       qrCodeDialog: {
@@ -92,6 +111,24 @@ window.app = Vue.createApp({
       return this.withdrawLinks.sort(function (a, b) {
         return b.uses_left - a.uses_left
       })
+    },
+    assertMinimumWithdrawable() {
+      const dialog = this.formDialog.show
+        ? this.formDialog
+        : this.simpleformDialog
+      return dialog.data.currency
+        ? dialog.data.min_withdrawable >= 0.01
+        : dialog.data.min_withdrawable >= 1
+    },
+    assertMaximumWithdrawable() {
+      const dialog = this.formDialog.show
+        ? this.formDialog
+        : this.simpleformDialog
+      return dialog.data.currency
+        ? dialog.data.max_withdrawable >= 0.01 &&
+            dialog.data.max_withdrawable >= dialog.data.min_withdrawable
+        : dialog.data.max_withdrawable >= 1 &&
+            dialog.data.max_withdrawable >= dialog.data.min_withdrawable
     }
   },
   methods: {
@@ -125,13 +162,15 @@ window.app = Vue.createApp({
       this.formDialog.data = {
         is_unique: false,
         use_custom: false,
-        has_webhook: false
+        has_webhook: false,
+        enabled: true
       }
     },
     simplecloseFormDialog() {
       this.simpleformDialog.data = {
         is_unique: false,
-        use_custom: false
+        use_custom: false,
+        enabled: true
       }
     },
     openQrCodeDialog(linkId) {
@@ -227,6 +266,7 @@ window.app = Vue.createApp({
         })
     },
     createWithdrawLink(wallet, data) {
+      console.log(data)
       LNbits.api
         .request('POST', '/withdraw/api/v1/links', wallet.adminkey, data)
         .then(response => {
@@ -310,5 +350,6 @@ window.app = Vue.createApp({
       this.getWithdrawLinks()
       this.checker = setInterval(this.getWithdrawLinks, 300000)
     }
+    this.currencyOptions = this.g.allowedCurrencies
   }
 })

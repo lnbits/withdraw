@@ -7,6 +7,12 @@
           <q-badge v-if="spent" color="red" class="q-mb-md"
             >Withdraw is spent.</q-badge
           >
+          <q-badge v-if="spent" color="red" class="q-mb-md"
+            >Withdraw is spent.</q-badge
+          >
+          <q-badge v-else-if="!enabled" color="grey" class="q-mb-md"
+            >Withdraw is disabled.</q-badge
+          >
           <a v-else class="text-secondary" :href="link">
             <lnbits-qrcode-lnurl
               prefix="lnurlw"
@@ -57,7 +63,8 @@
         spent: {{ 'true' if spent else 'false' }},
         url: '{{ lnurl_url }}',
         lnurl: '',
-        nfcTagWriting: false
+        nfcTagWriting: false,
+        enabled: {{ 'true' if enabled else 'false' }}
       }
     }
   })
