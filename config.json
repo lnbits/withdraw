@@ -4,7 +4,7 @@
   "name": "Withdraw Links",
   "repo": "https://github.com/lnbits/withdraw",
   "short_description": "Make LNURL withdraw links",
-  "description": "",
+  "description": "Withdraw links that allow others to easily claim Lightning payments from your wallet. With this extension you can generate reusable or one-time withdraw links, share them as QR codes or URLs, and let recipients withdraw sats directly to their Lightning wallet. Withdraw links are useful for giveaways, rewards, refunds, vouchers, or distributing payments to many users without needing their invoices in advance.",
   "tile": "/withdraw/static/image/lnurl-withdraw.png",
   "min_lnbits_version": "1.3.0",
   "contributors": [
