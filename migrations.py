@@ -139,3 +139,9 @@ async def m007_add_created_at_timestamp(db):
         "ALTER TABLE withdraw.withdraw_link "
         f"ADD COLUMN created_at TIMESTAMP DEFAULT {db.timestamp_column_default}"
     )
+
+
+async def m008_add_enabled_column(db):
+    await db.execute(
+        "ALTER TABLE withdraw.withdraw_link ADD COLUMN enabled BOOLEAN DEFAULT true;"
+    )

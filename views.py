@@ -47,6 +47,7 @@ async def display(request: Request, link_id):
             "request": request,
             "spent": link.is_spent,
             "lnurl_url": str(lnurl.url),
+            "enabled": link.enabled,
         },
     )
 
@@ -60,7 +61,6 @@ async def print_qr(request: Request, link_id):
         )
 
     if link.uses == 0:
-
         return withdraw_renderer().TemplateResponse(
             "withdraw/print_qr.html",
             {"request": request, "link": link.json(), "unique": False},

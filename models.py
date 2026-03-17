@@ -15,6 +15,7 @@ class CreateWithdrawData(BaseModel):
     webhook_headers: str = Query(None)
     webhook_body: str = Query(None)
     custom_url: str = Query(None)
+    enabled: bool = Query(True)
 
 
 class WithdrawLink(BaseModel):
@@ -37,6 +38,7 @@ class WithdrawLink(BaseModel):
     webhook_body: str = Query(None)
     custom_url: str = Query(None)
     created_at: datetime
+    enabled: bool = Query(True)
     lnurl: str | None = Field(
         default=None,
         no_database=True,
