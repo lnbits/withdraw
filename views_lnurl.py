@@ -3,6 +3,7 @@ from datetime import datetime
 
 import httpx
 import shortuuid
+from bolt11 import decode as decode_bolt11
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from lnbits.core.crud import update_payment
@@ -95,6 +96,16 @@ async def api_lnurl_callback(
 
     if not link.enabled:
         return LnurlErrorResponse(reason="Withdraw link is disabled.")
+
+    bolt11 = decode_bolt11(pr)
+    if not bolt11.amount_msat:
+        return LnurlErrorResponse(reason="0 amount invoices are not supported.")
+
+    if (
+        link.min_withdrawable * 1000 > bolt11.amount_msat
+        or bolt11.amount_msat > link.max_withdrawable * 1000
+    ):
+        return LnurlErrorResponse(reason="Amount not within limits.")
 
     if link.is_spent:
         return LnurlErrorResponse(reason="withdraw is spent.")
