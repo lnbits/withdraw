@@ -86,12 +86,10 @@ async def get_withdraw_links(
         query_params,
         WithdrawLink,
     )
-    result = await db.execute(
-        f"""
+    result = await db.execute(f"""
         SELECT COUNT(*) as total FROM withdraw.withdraw_link
         WHERE wallet IN ({q})
-        """
-    )
+        """)
     result2 = result.mappings().first()
 
     return PaginatedWithdraws(data=links, total=int(result2.total))
