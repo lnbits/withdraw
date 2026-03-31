@@ -91,6 +91,19 @@ async def api_link_create_or_update(
     if data.uses > 250:
         raise HTTPException(detail="250 uses max.", status_code=HTTPStatus.BAD_REQUEST)
 
+    if data.currency and data.currency.lower() != "sat":
+        if data.min_withdrawable < 0.01:
+            raise HTTPException(
+                detail="Min must be more than 0.01.", status_code=HTTPStatus.BAD_REQUEST
+            )
+        if data.max_withdrawable < 0.01:
+            raise HTTPException(
+                detail="Max must be more than 0.01.", status_code=HTTPStatus.BAD_REQUEST
+            )
+        # convert fiat float to int (cents)
+        data.min_withdrawable = int(data.min_withdrawable * 100)
+        data.max_withdrawable = int(data.max_withdrawable * 100)
+
     if data.min_withdrawable < 1:
         raise HTTPException(
             detail="Min must be more than 1.", status_code=HTTPStatus.BAD_REQUEST

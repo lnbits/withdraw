@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from lnbits.core.crud import update_payment
 from lnbits.core.models import Payment
 from lnbits.core.services import pay_invoice
+from lnbits.utils.exchange_rates import get_fiat_rate_satoshis
 from lnurl import (
     CallbackUrl,
     LnurlErrorResponse,
@@ -26,6 +27,7 @@ from .crud import (
     increment_withdraw_link,
     remove_unique_withdraw_link,
 )
+from .helpers import min_max_withdrawable
 from .models import WithdrawLink
 
 withdraw_ext_lnurl = APIRouter(prefix="/api/v1/lnurl")
@@ -57,12 +59,20 @@ async def api_lnurl_response(
         request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
     )
 
+    min_withdrawable = link.min_withdrawable
+    max_withdrawable = link.max_withdrawable
+
+    if link.currency:
+        rate = await get_fiat_rate_satoshis(link.currency)
+        min_withdrawable = round(min_withdrawable / 100 * rate)
+        max_withdrawable = round(max_withdrawable / 100 * rate)
+
     callback_url = parse_obj_as(CallbackUrl, url)
     return LnurlWithdrawResponse(
         callback=callback_url,
         k1=link.k1,
-        minWithdrawable=MilliSatoshi(link.min_withdrawable * 1000),
-        maxWithdrawable=MilliSatoshi(link.max_withdrawable * 1000),
+        minWithdrawable=MilliSatoshi(min_withdrawable * 1000),
+        maxWithdrawable=MilliSatoshi(max_withdrawable * 1000),
         defaultDescription=link.title,
     )
 
@@ -136,11 +146,16 @@ async def api_lnurl_callback(
     except Exception:
         return LnurlErrorResponse(reason="LNURL already being processed.")
 
+    _, max_withdrawable = await min_max_withdrawable(link)
+
+    # allow some fluctuation (as the fiat price may have changed between the calls)
+    max_withdrawable = round(max_withdrawable * 1.01)
+
     try:
         payment = await pay_invoice(
             wallet_id=link.wallet,
             payment_request=pr,
-            max_sat=link.max_withdrawable,
+            max_sat=max_withdrawable,
             extra={"tag": "withdraw", "withdrawal_link_id": link.id},
         )
         await increment_withdraw_link(link)
@@ -221,11 +236,13 @@ async def api_lnurl_multi_response(
 
     url = request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
 
+    min_withdrawable, max_withdrawable = await min_max_withdrawable(link)
+
     callback_url = parse_obj_as(CallbackUrl, f"{url!s}?id_unique_hash={id_unique_hash}")
     return LnurlWithdrawResponse(
         callback=callback_url,
         k1=link.k1,
-        minWithdrawable=MilliSatoshi(link.min_withdrawable * 1000),
-        maxWithdrawable=MilliSatoshi(link.max_withdrawable * 1000),
+        minWithdrawable=MilliSatoshi(min_withdrawable * 1000),
+        maxWithdrawable=MilliSatoshi(max_withdrawable * 1000),
         defaultDescription=link.title,
     )

@@ -2,8 +2,7 @@ async def m001_initial(db):
     """
     Creates an improved withdraw table and migrates the existing data.
     """
-    await db.execute(
-        f"""
+    await db.execute(f"""
         CREATE TABLE withdraw.withdraw_links (
             id TEXT PRIMARY KEY,
             wallet TEXT,
@@ -19,16 +18,14 @@ async def m001_initial(db):
             used INTEGER DEFAULT 0,
             usescsv TEXT
         );
-    """
-    )
+    """)
 
 
 async def m002_change_withdraw_table(db):
     """
     Creates an improved withdraw table and migrates the existing data.
     """
-    await db.execute(
-        f"""
+    await db.execute(f"""
         CREATE TABLE withdraw.withdraw_link (
             id TEXT PRIMARY KEY,
             wallet TEXT,
@@ -44,8 +41,7 @@ async def m002_change_withdraw_table(db):
             used INTEGER DEFAULT 0,
             usescsv TEXT
         );
-        """
-    )
+        """)
 
     for row in [
         list(row) for row in await db.fetchall("SELECT * FROM withdraw.withdraw_links")
@@ -100,14 +96,12 @@ async def m003_make_hash_check(db):
     """
     Creates a hash check table.
     """
-    await db.execute(
-        """
+    await db.execute("""
         CREATE TABLE withdraw.hash_check (
             id TEXT PRIMARY KEY,
             lnurl_id TEXT
         );
-    """
-    )
+    """)
 
 
 async def m004_webhook_url(db):
@@ -145,3 +139,7 @@ async def m008_add_enabled_column(db):
     await db.execute(
         "ALTER TABLE withdraw.withdraw_link ADD COLUMN enabled BOOLEAN DEFAULT true;"
     )
+
+
+async def m009_add_currency(db):
+    await db.execute("ALTER TABLE withdraw.withdraw_link ADD COLUMN currency TEXT;")
