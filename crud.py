@@ -22,8 +22,9 @@ async def create_withdraw_link(
         created_at=datetime.now(),
         open_time=int(datetime.now().timestamp()) + data.wait_time,
         title=data.title,
-        min_withdrawable=data.min_withdrawable,
-        max_withdrawable=data.max_withdrawable,
+        currency=data.currency,
+        min_withdrawable=int(data.min_withdrawable),
+        max_withdrawable=int(data.max_withdrawable),
         uses=data.uses,
         wait_time=data.wait_time,
         is_unique=data.is_unique,
@@ -85,12 +86,10 @@ async def get_withdraw_links(
         query_params,
         WithdrawLink,
     )
-    result = await db.execute(
-        f"""
+    result = await db.execute(f"""
         SELECT COUNT(*) as total FROM withdraw.withdraw_link
         WHERE wallet IN ({q})
-        """
-    )
+        """)
     result2 = result.mappings().first()
 
     return PaginatedWithdraws(data=links, total=int(result2.total))
@@ -141,7 +140,6 @@ async def create_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
 
 
 async def get_hash_check(the_hash: str, lnurl_id: str) -> HashCheck:
-
     hash_check = await db.fetchone(
         """
             SELECT id as hash, lnurl_id as lnurl
