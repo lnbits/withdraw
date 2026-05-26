@@ -461,7 +461,7 @@
     <q-card v-if="qrCodeDialog.data" class="q-pa-lg lnbits__dialog-card">
       <lnbits-qrcode-lnurl
         :url="activeUrl"
-        href
+        :href="href"
         @update:lnurl="v => lnurl = v"
         prefix="lnurlw"
       ></lnbits-qrcode-lnurl>

@@ -129,6 +129,9 @@ window.app = Vue.createApp({
             dialog.data.max_withdrawable >= dialog.data.min_withdrawable
         : dialog.data.max_withdrawable >= 1 &&
             dialog.data.max_withdrawable >= dialog.data.min_withdrawable
+    },
+    href() {
+      return new URL(this.activeUrl).origin
     }
   },
   methods: {
