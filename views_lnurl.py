@@ -9,7 +9,6 @@ from fastapi.responses import JSONResponse
 from lnbits.core.crud import update_payment
 from lnbits.core.models import Payment
 from lnbits.core.services import pay_invoice
-from lnbits.utils.exchange_rates import get_fiat_rate_satoshis
 from lnurl import (
     CallbackUrl,
     LnurlErrorResponse,
@@ -59,13 +58,7 @@ async def api_lnurl_response(
         request.url_for("withdraw.api_lnurl_callback", unique_hash=link.unique_hash)
     )
 
-    min_withdrawable = link.min_withdrawable
-    max_withdrawable = link.max_withdrawable
-
-    if link.currency:
-        rate = await get_fiat_rate_satoshis(link.currency)
-        min_withdrawable = round(min_withdrawable / 100 * rate)
-        max_withdrawable = round(max_withdrawable / 100 * rate)
+    min_withdrawable, max_withdrawable = await min_max_withdrawable(link)
 
     callback_url = parse_obj_as(CallbackUrl, url)
     return LnurlWithdrawResponse(
@@ -111,9 +104,11 @@ async def api_lnurl_callback(
     if not bolt11.amount_msat:
         return LnurlErrorResponse(reason="0 amount invoices are not supported.")
 
+    min_withdrawable, max_withdrawable = await min_max_withdrawable(link)
+
     if (
-        link.min_withdrawable * 1000 > bolt11.amount_msat
-        or bolt11.amount_msat > link.max_withdrawable * 1000
+        min_withdrawable * 1000 > bolt11.amount_msat
+        or bolt11.amount_msat > max_withdrawable * 1000
     ):
         return LnurlErrorResponse(reason="Amount not within limits.")
 
@@ -145,8 +140,6 @@ async def api_lnurl_callback(
         await create_hash_check(id_unique_hash or unique_hash, k1)
     except Exception:
         return LnurlErrorResponse(reason="LNURL already being processed.")
-
-    _, max_withdrawable = await min_max_withdrawable(link)
 
     # allow some fluctuation (as the fiat price may have changed between the calls)
     max_withdrawable = round(max_withdrawable * 1.01)
