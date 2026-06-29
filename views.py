@@ -46,6 +46,7 @@ async def display(request: Request, link_id):
         {
             "request": request,
             "spent": link.is_spent,
+            "expired": link.is_expired,
             "lnurl_url": str(lnurl.url),
             "enabled": link.enabled,
         },
@@ -58,6 +59,11 @@ async def print_qr(request: Request, link_id):
     if not link:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
+        )
+
+    if link.is_expired:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Withdraw has expired."
         )
 
     if link.uses == 0:
@@ -109,6 +115,11 @@ async def csv(request: Request, link_id):
     if not link:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
+        )
+
+    if link.is_expired:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Withdraw has expired."
         )
 
     if link.uses == 0:
