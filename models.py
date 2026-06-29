@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import Query
 from pydantic import BaseModel, Field
@@ -17,6 +17,7 @@ class CreateWithdrawData(BaseModel):
     custom_url: str = Query(None)
     enabled: bool = Query(True)
     currency: str = Query(None)
+    validity_seconds: int = Query(0, ge=0)
 
 
 class WithdrawLink(BaseModel):
@@ -41,6 +42,7 @@ class WithdrawLink(BaseModel):
     created_at: datetime
     enabled: bool = Query(True)
     currency: str = Query(None)
+    validity_seconds: int = Query(0)
     lnurl: str | None = Field(
         default=None,
         no_database=True,
@@ -60,6 +62,17 @@ class WithdrawLink(BaseModel):
     @property
     def is_spent(self) -> bool:
         return self.used >= self.uses
+
+    @property
+    def expires_at(self) -> datetime | None:
+        if self.validity_seconds <= 0:
+            return None
+        return self.created_at + timedelta(seconds=self.validity_seconds)
+
+    @property
+    def is_expired(self) -> bool:
+        expires_at = self.expires_at
+        return bool(expires_at and datetime.now(expires_at.tzinfo) > expires_at)
 
 
 class HashCheck(BaseModel):
