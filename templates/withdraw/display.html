@@ -7,8 +7,8 @@
           <q-badge v-if="spent" color="red" class="q-mb-md"
             >Withdraw is spent.</q-badge
           >
-          <q-badge v-if="spent" color="red" class="q-mb-md"
-            >Withdraw is spent.</q-badge
+          <q-badge v-else-if="expired" color="red" class="q-mb-md"
+            >Withdraw has expired.</q-badge
           >
           <q-badge v-else-if="!enabled" color="grey" class="q-mb-md"
             >Withdraw is disabled.</q-badge
@@ -61,6 +61,7 @@
     data() {
       return {
         spent: {{ 'true' if spent else 'false' }},
+        expired: {{ 'true' if expired else 'false' }},
         url: '{{ lnurl_url }}',
         lnurl: '',
         nfcTagWriting: false,

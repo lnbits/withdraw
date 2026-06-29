@@ -231,6 +231,28 @@
             </q-select>
           </div>
         </div>
+        <div class="row q-col-gutter-none">
+          <div class="col-8">
+            <q-input
+              filled
+              dense
+              v-model.number="formDialog.data.validity_amount"
+              type="number"
+              min="0"
+              label="Expiration time (optional)"
+              hint="The expiration time counts from the created at date."
+            ></q-input>
+          </div>
+          <div class="col-4 q-pl-xs">
+            <q-select
+              filled
+              dense
+              v-model="formDialog.validityMultiplier"
+              :options="formDialog.validityMultiplierOptions"
+            >
+            </q-select>
+          </div>
+        </div>
         <q-toggle
           label="Webhook"
           color="secondary"
@@ -396,6 +418,28 @@
           :default="1"
           label="Number of vouchers"
         ></q-input>
+        <div class="row q-col-gutter-none">
+          <div class="col-8">
+            <q-input
+              filled
+              dense
+              v-model.number="simpleformDialog.data.validity_amount"
+              type="number"
+              min="0"
+              label="Expiration time (optional)"
+              hint="The expiration time counts from the created at date."
+            ></q-input>
+          </div>
+          <div class="col-4 q-pl-xs">
+            <q-select
+              filled
+              dense
+              v-model="simpleformDialog.validityMultiplier"
+              :options="simpleformDialog.validityMultiplierOptions"
+            >
+            </q-select>
+          </div>
+        </div>
         <q-list>
           <q-item tag="label" class="rounded-borders">
             <q-item-section avatar>
@@ -475,6 +519,11 @@
         <span v-text="qrCodeDialog.data.max_withdrawable"></span> sat<br />
         <strong>Wait time:</strong>
         <span v-text="qrCodeDialog.data.wait_time"></span> seconds<br />
+        <strong>Expires:</strong>
+        <span
+          v-text="qrCodeDialog.data.expires_at ? new Date(qrCodeDialog.data.expires_at).toLocaleString() : 'Never'"
+        ></span
+        ><br />
         <strong>Withdraws:</strong>
         <span v-text="qrCodeDialog.data.used"></span>/
         <span v-text="qrCodeDialog.data.uses"></span><br />
