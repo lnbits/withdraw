@@ -5,6 +5,8 @@ const mapWithdrawLink = function (obj) {
   if (obj.currency) {
     obj.min_withdrawable = obj.min_withdrawable / 100
     obj.max_withdrawable = obj.max_withdrawable / 100
+    obj._data.min_withdrawable = obj.min_withdrawable
+    obj._data.max_withdrawable = obj.max_withdrawable
   }
   return obj
 }
