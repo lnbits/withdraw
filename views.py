@@ -92,6 +92,8 @@ async def print_qr(request: Request, link_id):
     page_link = list(chunks(links, 2))
     linked = list(chunks(page_link, 5))
 
+    expiry = link.expires_at
+
     if link.custom_url:
         return withdraw_renderer().TemplateResponse(
             "withdraw/print_qr_custom.html",
@@ -101,11 +103,18 @@ async def print_qr(request: Request, link_id):
                 "unique": True,
                 "custom_url": link.custom_url,
                 "amt": link.max_withdrawable,
+                "expiry": expiry.strftime("%Y-%m-%d") if expiry else None,
             },
         )
 
     return withdraw_renderer().TemplateResponse(
-        "withdraw/print_qr.html", {"request": request, "link": linked, "unique": True}
+        "withdraw/print_qr.html",
+        {
+            "request": request,
+            "link": linked,
+            "expiry": expiry.strftime("%Y-%m-%d") if expiry else None,
+            "unique": True,
+        },
     )
 
 

@@ -7,7 +7,14 @@
       {% for one in page %}
       <div class="wrapper">
         <img class="lnurlw_design" src="{{custom_url}}" alt="..." />
-        <span>{{ amt }} sats</span>
+        <div v-if="expiry" class="amount expiry text-right">
+          <span>{{ amt }} sats</span>
+          <br />
+          <span style="font-size: 0.7em; top: -1.4mm; position: relative"
+            >Valid until {{ expiry }}</span
+          >
+        </div>
+        <span v-else class="amount text-right">{{ amt }} sats</span>
         <div class="lnurlw">
           <lnbits-qrcode
             :value="theurl + '/?lightning={{one}}'"
@@ -24,8 +31,14 @@
 {% endblock %} {% block styles %}
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400');
+  :root {
+    --qr-top: 3mm;
+    --qr-left: 8mm;
+  }
   body {
     background: rgb(204, 204, 204);
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   page {
     background: white;
@@ -44,15 +57,20 @@
     padding: 1rem;
     width: fit-content;
   }
-  .wrapper span {
+  .wrapper .amount {
     display: block;
     position: absolute;
     font-family: 'Inter';
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: #fff;
-    top: calc(3.2mm + 1rem);
+    top: calc(2.8mm + 1rem);
     right: calc(4mm + 1rem);
+
+    &.expiry {
+      top: calc(0.7mm + 1rem);
+    }
   }
+
   .wrapper img.lnurlw_design {
     display: block;
     width: 187mm;
@@ -62,9 +80,9 @@
   .wrapper .lnurlw {
     display: block;
     position: absolute;
-    top: calc(3mm + 1rem);
-    left: calc(6mm + 1rem);
-    transform: rotate(45deg);
+    top: calc(var(--qr-top) + 1rem);
+    left: calc(var(--qr-left) + 1rem);
+    transform: rotate(-45deg);
     width: 27mm;
   }
 
@@ -78,16 +96,17 @@
     .wrapper {
       padding: 0px !important;
     }
-    .wrapper span {
-      top: 3mm;
+    .wrapper .amount {
+      top: 2.8mm;
       right: 4mm;
+
+      &.expiry {
+        top: 0.7mm;
+      }
     }
     .wrapper .lnurlw {
-      display: block;
-      position: absolute;
-      top: 3mm;
-      left: 6mm;
-      transform: rotate(45deg);
+      top: var(--qr-top);
+      left: var(--qr-left);
     }
   }
 </style>
@@ -102,11 +121,15 @@
           show: true,
           data: null
         },
-        links: []
+        links: [],
+        expiry: false
       }
     },
     created() {
       this.links = '{{ link | tojson }}'
+      if ('{{ expiry }}' !== 'None') {
+        this.expiry = true
+      }
     }
   })
 </script>
