@@ -236,7 +236,7 @@
             <q-input
               filled
               dense
-              v-model.number="formDialog.data.validity_amount"
+              v-model.number="formDialog.data.expiry_amount"
               type="number"
               min="0"
               label="Expiration time (optional)"
@@ -247,8 +247,8 @@
             <q-select
               filled
               dense
-              v-model="formDialog.validityMultiplier"
-              :options="formDialog.validityMultiplierOptions"
+              v-model="formDialog.expiryMultiplier"
+              :options="formDialog.expiryMultiplierOptions"
             >
             </q-select>
           </div>
@@ -423,7 +423,7 @@
             <q-input
               filled
               dense
-              v-model.number="simpleformDialog.data.validity_amount"
+              v-model.number="simpleformDialog.data.expiry_amount"
               type="number"
               min="0"
               label="Expiration time (optional)"
@@ -434,8 +434,8 @@
             <q-select
               filled
               dense
-              v-model="simpleformDialog.validityMultiplier"
-              :options="simpleformDialog.validityMultiplierOptions"
+              v-model="simpleformDialog.expiryMultiplier"
+              :options="simpleformDialog.expiryMultiplierOptions"
             >
             </q-select>
           </div>

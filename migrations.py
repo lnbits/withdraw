@@ -145,8 +145,8 @@ async def m009_add_currency(db):
     await db.execute("ALTER TABLE withdraw.withdraw_link ADD COLUMN currency TEXT;")
 
 
-async def m010_add_validity_seconds(db):
+async def m010_add_expiry_seconds(db):
     await db.execute(
         "ALTER TABLE withdraw.withdraw_link "
-        "ADD COLUMN validity_seconds INTEGER NOT NULL DEFAULT 0;"
+        "ADD COLUMN expiry_seconds INTEGER NOT NULL DEFAULT 0;"
     )

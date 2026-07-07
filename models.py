@@ -17,7 +17,7 @@ class CreateWithdrawData(BaseModel):
     custom_url: str = Query(None)
     enabled: bool = Query(True)
     currency: str = Query(None)
-    validity_seconds: int = Query(0, ge=0)
+    expiry_seconds: int | None = Query(None, ge=0)
 
 
 class WithdrawLink(BaseModel):
@@ -42,7 +42,7 @@ class WithdrawLink(BaseModel):
     created_at: datetime
     enabled: bool = Query(True)
     currency: str = Query(None)
-    validity_seconds: int = Query(0)
+    expiry_seconds: int = Query(0)
     lnurl: str | None = Field(
         default=None,
         no_database=True,
@@ -65,9 +65,9 @@ class WithdrawLink(BaseModel):
 
     @property
     def expires_at(self) -> datetime | None:
-        if self.validity_seconds <= 0:
+        if self.expiry_seconds <= 0:
             return None
-        return self.created_at + timedelta(seconds=self.validity_seconds)
+        return self.created_at + timedelta(seconds=self.expiry_seconds)
 
     @property
     def is_expired(self) -> bool:

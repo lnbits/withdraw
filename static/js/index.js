@@ -2,25 +2,25 @@ const mapWithdrawLink = function (obj) {
   obj._data = _.clone(obj)
   obj.uses_left = obj.uses - obj.used
   obj._data.use_custom = Boolean(obj.custom_url)
-  obj.expires_at = obj.validity_seconds
+  obj.expires_at = obj.expiry_seconds
     ? new Date(
-        new Date(obj.created_at).getTime() + obj.validity_seconds * 1000
+        new Date(obj.created_at).getTime() + obj.expiry_seconds * 1000
       ).toISOString()
     : null
   obj.is_expired = obj.expires_at
     ? new Date(obj.expires_at) < new Date()
     : false
-  obj._data.validity_multiplier = 'days'
-  obj._data.validity_amount = null
-  if (obj.validity_seconds) {
-    if (obj.validity_seconds % 2592000 === 0) {
-      obj._data.validity_multiplier = 'months'
-      obj._data.validity_amount = obj.validity_seconds / 2592000
-    } else if (obj.validity_seconds % 604800 === 0) {
-      obj._data.validity_multiplier = 'weeks'
-      obj._data.validity_amount = obj.validity_seconds / 604800
+  obj._data.expiry_multiplier = 'days'
+  obj._data.expiry_amount = null
+  if (obj.expiry_seconds) {
+    if (obj.expiry_seconds % 2592000 === 0) {
+      obj._data.expiry_multiplier = 'months'
+      obj._data.expiry_amount = obj.expiry_seconds / 2592000
+    } else if (obj.expiry_seconds % 604800 === 0) {
+      obj._data.expiry_multiplier = 'weeks'
+      obj._data.expiry_amount = obj.expiry_seconds / 604800
     } else {
-      obj._data.validity_amount = obj.validity_seconds / 86400
+      obj._data.expiry_amount = obj.expiry_seconds / 86400
     }
   }
   if (obj.currency) {
@@ -114,8 +114,8 @@ window.app = Vue.createApp({
         show: false,
         secondMultiplier: 'seconds',
         secondMultiplierOptions: ['seconds', 'minutes', 'hours'],
-        validityMultiplier: 'days',
-        validityMultiplierOptions: ['days', 'weeks', 'months'],
+        expiryMultiplier: 'days',
+        expiryMultiplierOptions: ['days', 'weeks', 'months'],
         data: {
           is_unique: false,
           use_custom: false,
@@ -125,8 +125,8 @@ window.app = Vue.createApp({
       },
       simpleformDialog: {
         show: false,
-        validityMultiplier: 'days',
-        validityMultiplierOptions: ['days', 'weeks', 'months'],
+        expiryMultiplier: 'days',
+        expiryMultiplierOptions: ['days', 'weeks', 'months'],
         data: {
           is_unique: true,
           use_custom: false,
@@ -195,22 +195,22 @@ window.app = Vue.createApp({
         })
     },
     closeFormDialog() {
-      this.formDialog.validityMultiplier = 'days'
+      this.formDialog.expiryMultiplier = 'days'
       this.formDialog.data = {
         is_unique: false,
         use_custom: false,
         has_webhook: false,
         enabled: true,
-        validity_seconds: 0
+        expiry_seconds: 0
       }
     },
     simplecloseFormDialog() {
-      this.simpleformDialog.validityMultiplier = 'days'
+      this.simpleformDialog.expiryMultiplier = 'days'
       this.simpleformDialog.data = {
         is_unique: false,
         use_custom: false,
         enabled: true,
-        validity_seconds: 0
+        expiry_seconds: 0
       }
     },
     openQrCodeDialog(linkId) {
@@ -222,7 +222,7 @@ window.app = Vue.createApp({
     openUpdateDialog(linkId) {
       let link = _.findWhere(this.withdrawLinks, {id: linkId})
       link._data.has_webhook = link._data.webhook_url ? true : false
-      this.formDialog.validityMultiplier = link._data.validity_multiplier
+      this.formDialog.expiryMultiplier = link._data.expiry_multiplier
       this.formDialog.data = _.clone(link._data)
       this.formDialog.show = true
     },
@@ -247,12 +247,12 @@ window.app = Vue.createApp({
           minutes: 60,
           hours: 3600
         }[this.formDialog.secondMultiplier]
-      data.validity_seconds = this.validitySeconds(
-        data.validity_amount,
-        this.formDialog.validityMultiplier
+      data.expiry_seconds = this.expirySeconds(
+        data.expiry_amount,
+        this.formDialog.expiryMultiplier
       )
-      delete data.validity_amount
-      delete data.validity_multiplier
+      delete data.expiry_amount
+      delete data.expiry_multiplier
 
       if (data.id) {
         this.updateWithdrawLink(wallet, data)
@@ -270,12 +270,12 @@ window.app = Vue.createApp({
       data.min_withdrawable = data.max_withdrawable
       data.title = 'vouchers'
       data.is_unique = true
-      data.validity_seconds = this.validitySeconds(
-        data.validity_amount,
-        this.simpleformDialog.validityMultiplier
+      data.expiry_seconds = this.expirySeconds(
+        data.expiry_amount,
+        this.simpleformDialog.expiryMultiplier
       )
-      delete data.validity_amount
-      delete data.validity_multiplier
+      delete data.expiry_amount
+      delete data.expiry_multiplier
 
       if (!data.use_custom) {
         data.custom_url = null
@@ -318,7 +318,7 @@ window.app = Vue.createApp({
           LNbits.utils.notifyApiError(error)
         })
     },
-    validitySeconds(amount, unit) {
+    expirySeconds(amount, unit) {
       return (
         (Number(amount) || 0) *
         {
