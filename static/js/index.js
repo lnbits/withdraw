@@ -5,6 +5,8 @@ const mapWithdrawLink = function (obj) {
   if (obj.currency) {
     obj.min_withdrawable = obj.min_withdrawable / 100
     obj.max_withdrawable = obj.max_withdrawable / 100
+    obj._data.min_withdrawable = obj.min_withdrawable
+    obj._data.max_withdrawable = obj.max_withdrawable
   }
   return obj
 }
@@ -202,11 +204,6 @@ window.app = Vue.createApp({
         data.custom_url = CUSTOM_URL
       }
 
-      if (data.currency) {
-        data.min_withdrawable = data.min_withdrawable * 100
-        data.max_withdrawable = data.max_withdrawable * 100
-      }
-
       data.wait_time =
         data.wait_time *
         {
@@ -238,11 +235,6 @@ window.app = Vue.createApp({
 
       if (data.use_custom && !data?.custom_url) {
         data.custom_url = '/static/images/default_voucher.png'
-      }
-
-      if (data.currency) {
-        data.min_withdrawable = data.min_withdrawable * 100
-        data.max_withdrawable = data.max_withdrawable * 100
       }
 
       if (data.id) {
