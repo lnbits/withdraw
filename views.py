@@ -46,6 +46,7 @@ async def display(request: Request, link_id):
         {
             "request": request,
             "spent": link.is_spent,
+            "expired": link.is_expired,
             "lnurl_url": str(lnurl.url),
             "enabled": link.enabled,
         },
@@ -58,6 +59,11 @@ async def print_qr(request: Request, link_id):
     if not link:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
+        )
+
+    if link.is_expired:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Withdraw has expired."
         )
 
     if link.uses == 0:
@@ -86,6 +92,8 @@ async def print_qr(request: Request, link_id):
     page_link = list(chunks(links, 2))
     linked = list(chunks(page_link, 5))
 
+    expiry = link.expires_at
+
     if link.custom_url:
         return withdraw_renderer().TemplateResponse(
             "withdraw/print_qr_custom.html",
@@ -95,11 +103,18 @@ async def print_qr(request: Request, link_id):
                 "unique": True,
                 "custom_url": link.custom_url,
                 "amt": link.max_withdrawable,
+                "expiry": expiry.strftime("%Y-%m-%d") if expiry else None,
             },
         )
 
     return withdraw_renderer().TemplateResponse(
-        "withdraw/print_qr.html", {"request": request, "link": linked, "unique": True}
+        "withdraw/print_qr.html",
+        {
+            "request": request,
+            "link": linked,
+            "expiry": expiry.strftime("%Y-%m-%d") if expiry else None,
+            "unique": True,
+        },
     )
 
 
@@ -109,6 +124,11 @@ async def csv(request: Request, link_id):
     if not link:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
+        )
+
+    if link.is_expired:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Withdraw has expired."
         )
 
     if link.uses == 0:

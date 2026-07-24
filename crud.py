@@ -33,6 +33,8 @@ async def create_withdraw_link(
         webhook_headers=data.webhook_headers,
         webhook_body=data.webhook_body,
         custom_url=data.custom_url,
+        enabled=data.enabled,
+        expiry_seconds=data.expiry_seconds or 0,
         number=0,
     )
     await db.insert("withdraw.withdraw_link", withdraw_link)

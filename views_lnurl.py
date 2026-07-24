@@ -48,6 +48,9 @@ async def api_lnurl_response(
     if not link.enabled:
         return LnurlErrorResponse(reason="Withdraw link is disabled.")
 
+    if link.is_expired:
+        return LnurlErrorResponse(reason="Withdraw link has expired.")
+
     if link.is_spent:
         return LnurlErrorResponse(reason="Withdraw is spent.")
 
@@ -99,6 +102,9 @@ async def api_lnurl_callback(
 
     if not link.enabled:
         return LnurlErrorResponse(reason="Withdraw link is disabled.")
+
+    if link.is_expired:
+        return LnurlErrorResponse(reason="Withdraw link has expired.")
 
     bolt11 = decode_bolt11(pr)
     if not bolt11.amount_msat:
@@ -220,6 +226,9 @@ async def api_lnurl_multi_response(
 
     if not link.enabled:
         return LnurlErrorResponse(reason="Withdraw link is disabled.")
+
+    if link.is_expired:
+        return LnurlErrorResponse(reason="Withdraw link has expired.")
 
     if link.is_spent:
         return LnurlErrorResponse(reason="Withdraw is spent.")

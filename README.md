@@ -23,6 +23,7 @@ LNbits Quick Vouchers allows you to easily create a batch of LNURLw's QR codes t
    - select wallet
    - set the amount each voucher will allow someone to withdraw
    - set the amount of vouchers you want to create - _have in mind you need to have a balance on the wallet that supports the amount \* number of vouchers_
+   - optionally set an expiration time in days, weeks, or months. The expiration starts from the date the vouchers are created. Months are counted as 30 days
 2. You can now print, share, display your LNURLw links or QR codes\
    ![lnurlw created](https://i.imgur.com/X00twiX.jpg)
    - on details you can print the vouchers\
@@ -39,6 +40,7 @@ LNbits Quick Vouchers allows you to easily create a batch of LNURLw's QR codes t
    - set a title for the LNURLw (it will show up in users wallet)
    - define the minimum and maximum a user can withdraw, if you want a fixed amount set them both to an equal value
    - set how many times can the LNURLw be scanned, if it's a one time use or it can be scanned 100 times
+   - optionally set an expiration time in days, weeks, or months. The expiration starts from the date the LNURLw is created. Months are counted as 30 days
    - LNbits has the "_Time between withdraws_" setting, you can define how long the LNURLw will be unavailable between scans
    - you can set the time in _seconds, minutes or hours_
    - the "_Use unique withdraw QR..._" reduces the chance of your LNURL withdraw being exploited and depleted by one person, by generating a new QR code every time it's scanned
@@ -46,5 +48,7 @@ LNbits Quick Vouchers allows you to easily create a batch of LNURLw's QR codes t
    ![lnurlw created](https://i.imgur.com/X00twiX.jpg)
 
 **LNbits bonus:** If a user doesn't have a Lightning Network wallet and scans the LNURLw QR code with their smartphone camera, or a QR scanner app, they can follow the link provided to claim their satoshis and get an instant LNbits wallet!
+
+If no expiration time is set, the LNURLw never expires. Existing LNURLw links and vouchers keep working without an expiration unless one is added later.
 
 ![](https://i.imgur.com/2zZ7mi8.jpg)
