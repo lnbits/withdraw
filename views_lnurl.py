@@ -17,7 +17,7 @@ from lnurl import (
     MilliSatoshi,
 )
 from loguru import logger
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 
 from .crud import (
     create_hash_check,
@@ -63,7 +63,7 @@ async def api_lnurl_response(
 
     min_withdrawable, max_withdrawable = await min_max_withdrawable(link)
 
-    callback_url = parse_obj_as(CallbackUrl, url)
+    callback_url = TypeAdapter(CallbackUrl).validate_python(url)
     return LnurlWithdrawResponse(
         callback=callback_url,
         k1=link.k1,
@@ -182,6 +182,8 @@ def check_unique_link(link: WithdrawLink, unique_hash: str) -> bool:
 async def dispatch_webhook(
     link: WithdrawLink, payment: Payment, payment_request: str
 ) -> None:
+    if not link.webhook_url:
+        return
     async with httpx.AsyncClient() as client:
         try:
             r: httpx.Response = await client.post(
@@ -240,7 +242,9 @@ async def api_lnurl_multi_response(
 
     min_withdrawable, max_withdrawable = await min_max_withdrawable(link)
 
-    callback_url = parse_obj_as(CallbackUrl, f"{url!s}?id_unique_hash={id_unique_hash}")
+    callback_url = TypeAdapter(CallbackUrl).validate_python(
+        f"{url!s}?id_unique_hash={id_unique_hash}"
+    )
     return LnurlWithdrawResponse(
         callback=callback_url,
         k1=link.k1,
