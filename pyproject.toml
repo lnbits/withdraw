@@ -1,11 +1,11 @@
 [project]
 name = "lnbits-withdraw"
-version = "0.0.0"
-requires-python = ">=3.10,<3.13"
+version = "1.4.0"
+requires-python = ">=3.10,<3.14"
 description = "LNbits, free and open-source Lightning wallet and accounts system."
 authors = [{ name = "Alan Bits", email = "alan@lnbits.com" }]
 urls = { Homepage = "https://lnbits.com", Repository = "https://github.com/lnbits/bitcoinswitch_extension" }
-dependencies = [ "lnbits>1" ]
+dependencies = [ "lnbits>=1.7.0rc1" ]
 
 [tool.poetry]
 package-mode = false
@@ -15,11 +15,17 @@ dev = [
     "black",
     "pytest-asyncio",
     "pytest",
-    "mypy",
+    "mypy==1.17.1",
     "pre-commit",
     "ruff",
     "pytest-md",
 ]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+
+[tool.uv]
+build-constraint-dependencies = ["scikit-build-core<0.10"]
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
