@@ -11,12 +11,12 @@ class CreateWithdrawData(BaseModel):
     uses: int = Query(..., ge=1)
     wait_time: int = Query(..., ge=1)
     is_unique: bool
-    webhook_url: str = Query(None)
-    webhook_headers: str = Query(None)
-    webhook_body: str = Query(None)
-    custom_url: str = Query(None)
+    webhook_url: str | None = Query(None)
+    webhook_headers: str | None = Query(None)
+    webhook_body: str | None = Query(None)
+    custom_url: str | None = Query(None)
     enabled: bool = Query(True)
-    currency: str = Query(None)
+    currency: str | None = Query(None)
     expiry_seconds: int | None = Query(None, ge=0)
 
 
@@ -34,18 +34,18 @@ class WithdrawLink(BaseModel):
     open_time: int = Query(0)
     used: int = Query(0)
     usescsv: str = Query(None)
-    number: int = Field(default=0, no_database=True)
-    webhook_url: str = Query(None)
-    webhook_headers: str = Query(None)
-    webhook_body: str = Query(None)
-    custom_url: str = Query(None)
+    number: int = Field(default=0, json_schema_extra={"no_database": True})
+    webhook_url: str | None = Query(None)
+    webhook_headers: str | None = Query(None)
+    webhook_body: str | None = Query(None)
+    custom_url: str | None = Query(None)
     created_at: datetime
     enabled: bool = Query(True)
-    currency: str = Query(None)
+    currency: str | None = Query(None)
     expiry_seconds: int = Query(0)
     lnurl: str | None = Field(
         default=None,
-        no_database=True,
+        json_schema_extra={"no_database": True},
         deprecated=True,
         description=(
             "Deprecated: Instead of using this bech32 encoded string, dynamically "
@@ -55,7 +55,7 @@ class WithdrawLink(BaseModel):
     )
     lnurl_url: str | None = Field(
         default=None,
-        no_database=True,
+        json_schema_extra={"no_database": True},
         description="The raw LNURL callback URL (use for QR code generation)",
     )
 

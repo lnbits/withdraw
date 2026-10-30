@@ -165,7 +165,7 @@ async def api_link_create_or_update(
                 numbers.append(str(current_number))
             link.usescsv = ",".join(numbers)
 
-        for k, v in data.dict().items():
+        for k, v in data.model_dump().items():
             if v is not None:
                 setattr(link, k, v)
 

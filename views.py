@@ -20,7 +20,7 @@ def withdraw_renderer():
 @withdraw_ext_generic.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User = Depends(check_user_exists)):
     return withdraw_renderer().TemplateResponse(
-        "withdraw/index.html", {"request": request, "user": user.json()}
+        "withdraw/index.html", {"request": request, "user": user.model_dump_json()}
     )
 
 
@@ -69,7 +69,7 @@ async def print_qr(request: Request, link_id):
     if link.uses == 0:
         return withdraw_renderer().TemplateResponse(
             "withdraw/print_qr.html",
-            {"request": request, "link": link.json(), "unique": False},
+            {"request": request, "link": link.model_dump_json(), "unique": False},
         )
     links = []
     count = 0
