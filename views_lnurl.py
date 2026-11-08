@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from lnbits.core.crud import update_payment
 from lnbits.core.models import Payment
 from lnbits.core.services import pay_invoice
+from lnbits.utils.safe_http import SafeHttpClient
 from lnurl import (
     CallbackUrl,
     LnurlErrorResponse,
@@ -184,7 +185,7 @@ async def dispatch_webhook(
 ) -> None:
     if not link.webhook_url:
         return
-    async with httpx.AsyncClient() as client:
+    async with SafeHttpClient(read_body=False) as client:
         try:
             r: httpx.Response = await client.post(
                 link.webhook_url,
@@ -200,15 +201,18 @@ async def dispatch_webhook(
                 timeout=40,
             )
             payment.extra["wh_success"] = r.is_success
-            payment.extra["wh_message"] = r.reason_phrase
-            payment.extra["wh_response"] = r.text
+            payment.extra["wh_message"] = (
+                "Webhook delivered." if r.is_success else "Webhook failed."
+            )
+            payment.extra["wh_response"] = ""
             await update_payment(payment)
         except Exception as exc:
             # webhook fails shouldn't cause the lnurlw to fail
             # since invoice is already paid
-            logger.error(f"Caught exception when dispatching webhook url: {exc!s}")
+            logger.error("Webhook request failed: {}", type(exc).__name__)
             payment.extra["wh_success"] = False
-            payment.extra["wh_message"] = str(exc)
+            payment.extra["wh_message"] = "Webhook request failed."
+            payment.extra["wh_response"] = ""
             await update_payment(payment)
 
 
