@@ -2,7 +2,7 @@
   "name": "Withdraw Links",
   "short_description": "Make LNURL withdraw links",
   "tile": "/withdraw/static/image/lnurl-withdraw.png",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "min_lnbits_version": "1.7.0-rc1",
   "contributors": [
     {
