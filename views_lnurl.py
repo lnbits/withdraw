@@ -37,6 +37,7 @@ withdraw_ext_lnurl = APIRouter(prefix="/api/v1/lnurl")
     "/{unique_hash}",
     response_class=JSONResponse,
     name="withdraw.api_lnurl_response",
+    openapi_extra={"x-lnbits-local-lnurl": True},
 )
 async def api_lnurl_response(
     request: Request, unique_hash: str
@@ -90,6 +91,7 @@ async def api_lnurl_response(
         404: {"description": "withdraw link not found."},
         405: {"description": "withdraw link is spent."},
     },
+    openapi_extra={"x-lnbits-local-lnurl": True},
 )
 async def api_lnurl_callback(
     unique_hash: str,
@@ -221,6 +223,7 @@ async def dispatch_webhook(
     "/{unique_hash}/{id_unique_hash}",
     response_class=JSONResponse,
     name="withdraw.api_lnurl_multi_response",
+    openapi_extra={"x-lnbits-local-lnurl": True},
 )
 async def api_lnurl_multi_response(
     request: Request, unique_hash: str, id_unique_hash: str
