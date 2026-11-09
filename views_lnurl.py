@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from lnbits.core.crud import update_payment
 from lnbits.core.models import Payment
 from lnbits.core.services import pay_invoice
+from lnbits.utils.safe_http import SafeHttpClient
 from lnurl import (
     CallbackUrl,
     LnurlErrorResponse,
@@ -36,6 +37,7 @@ withdraw_ext_lnurl = APIRouter(prefix="/api/v1/lnurl")
     "/{unique_hash}",
     response_class=JSONResponse,
     name="withdraw.api_lnurl_response",
+    openapi_extra={"x-lnbits-local-lnurl": True},
 )
 async def api_lnurl_response(
     request: Request, unique_hash: str
@@ -89,6 +91,7 @@ async def api_lnurl_response(
         404: {"description": "withdraw link not found."},
         405: {"description": "withdraw link is spent."},
     },
+    openapi_extra={"x-lnbits-local-lnurl": True},
 )
 async def api_lnurl_callback(
     unique_hash: str,
@@ -184,7 +187,7 @@ async def dispatch_webhook(
 ) -> None:
     if not link.webhook_url:
         return
-    async with httpx.AsyncClient() as client:
+    async with SafeHttpClient(read_body=False) as client:
         try:
             r: httpx.Response = await client.post(
                 link.webhook_url,
@@ -200,15 +203,18 @@ async def dispatch_webhook(
                 timeout=40,
             )
             payment.extra["wh_success"] = r.is_success
-            payment.extra["wh_message"] = r.reason_phrase
-            payment.extra["wh_response"] = r.text
+            payment.extra["wh_message"] = (
+                "Webhook delivered." if r.is_success else "Webhook failed."
+            )
+            payment.extra["wh_response"] = ""
             await update_payment(payment)
         except Exception as exc:
             # webhook fails shouldn't cause the lnurlw to fail
             # since invoice is already paid
-            logger.error(f"Caught exception when dispatching webhook url: {exc!s}")
+            logger.error("Webhook request failed: {}", type(exc).__name__)
             payment.extra["wh_success"] = False
-            payment.extra["wh_message"] = str(exc)
+            payment.extra["wh_message"] = "Webhook request failed."
+            payment.extra["wh_response"] = ""
             await update_payment(payment)
 
 
@@ -217,6 +223,7 @@ async def dispatch_webhook(
     "/{unique_hash}/{id_unique_hash}",
     response_class=JSONResponse,
     name="withdraw.api_lnurl_multi_response",
+    openapi_extra={"x-lnbits-local-lnurl": True},
 )
 async def api_lnurl_multi_response(
     request: Request, unique_hash: str, id_unique_hash: str
