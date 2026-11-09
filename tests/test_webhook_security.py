@@ -2,14 +2,17 @@ import asyncio
 import json
 import socket
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import AsyncMock
 
 import httpx
 import pytest
+from lnbits.core.models import Payment
 from lnbits.settings import settings
 from lnbits.utils.safe_http import SafeHttpClient
 
 from .. import views_lnurl as views
+from ..models import WithdrawLink
 
 
 @pytest.fixture
@@ -51,7 +54,9 @@ async def test_webhook_payload_preserved_response_not_stored(monkeypatch):
         webhook_body='{"custom":21}',
         webhook_headers='{"X-API-KEY":"key"}',
     )
-    await views.dispatch_webhook(link, payment, "invoice")
+    await views.dispatch_webhook(
+        cast(WithdrawLink, link), cast(Payment, payment), "invoice"
+    )
     assert payment.extra == {
         "wh_success": True,
         "wh_message": "Webhook delivered.",
@@ -79,7 +84,9 @@ async def test_failed_webhook_does_not_fail_already_paid_withdrawal(monkeypatch)
         webhook_body="",
         webhook_headers="",
     )
-    await views.dispatch_webhook(link, payment, "invoice")
+    await views.dispatch_webhook(
+        cast(WithdrawLink, link), cast(Payment, payment), "invoice"
+    )
     assert payment.extra == {
         "wh_success": False,
         "wh_message": "Webhook request failed.",
