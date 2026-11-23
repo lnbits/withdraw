@@ -23,7 +23,7 @@ withdraw_ext_api = APIRouter(prefix="/api/v1")
 @withdraw_ext_api.get("/links", status_code=HTTPStatus.OK)
 async def api_links(
     request: Request,
-    key_info: WalletTypeInfo = Depends(require_invoice_key),
+    key_info: WalletTypeInfo = Depends(require_admin_key),
     all_wallets: bool = Query(False),
     offset: int = Query(0),
     limit: int = Query(0),
@@ -54,7 +54,7 @@ async def api_links(
 async def api_link_retrieve(
     request: Request,
     link_id: str,
-    key_info: WalletTypeInfo = Depends(require_invoice_key),
+    key_info: WalletTypeInfo = Depends(require_admin_key),
 ) -> WithdrawLink:
     link = await get_withdraw_link(link_id, 0)
 

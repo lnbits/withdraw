@@ -9,6 +9,7 @@ from lnbits.helpers import template_renderer
 
 from .crud import chunks, get_withdraw_link
 from .helpers import create_lnurl
+from .models import WithdrawLink
 
 withdraw_ext_generic = APIRouter()
 
@@ -54,12 +55,10 @@ async def display(request: Request, link_id):
 
 
 @withdraw_ext_generic.get("/print/{link_id}", response_class=HTMLResponse)
-async def print_qr(request: Request, link_id):
-    link = await get_withdraw_link(link_id)
-    if not link:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
-        )
+async def print_qr(
+    request: Request, link_id: str, user: User = Depends(check_user_exists)
+):
+    link = await _get_owned_withdraw_link(link_id, user)
 
     if link.is_expired:
         raise HTTPException(
@@ -119,12 +118,8 @@ async def print_qr(request: Request, link_id):
 
 
 @withdraw_ext_generic.get("/csv/{link_id}", response_class=HTMLResponse)
-async def csv(request: Request, link_id):
-    link = await get_withdraw_link(link_id)
-    if not link:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
-        )
+async def csv(request: Request, link_id: str, user: User = Depends(check_user_exists)):
+    link = await _get_owned_withdraw_link(link_id, user)
 
     if link.is_expired:
         raise HTTPException(
@@ -164,3 +159,16 @@ async def csv(request: Request, link_id):
             "Content-Disposition": f"attachment; filename=withdraw-links-{link_id}.csv"
         },
     )
+
+
+async def _get_owned_withdraw_link(link_id: str, user: User) -> WithdrawLink:
+    link = await get_withdraw_link(link_id)
+    if not link:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Withdraw link does not exist."
+        )
+    if link.wallet not in user.wallet_ids:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="Not your withdraw link."
+        )
+    return link
